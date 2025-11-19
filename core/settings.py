@@ -147,14 +147,17 @@ if USE_S3:
 
     AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
     AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
-    AWS_STORAGE_BUCKET_NAME = "macnova-machinery-media"
-    AWS_S3_REGION_NAME = "us-east-2"
+    AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME", "macnova-machinery-media")
+    AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "us-east-2")
 
     AWS_QUERYSTRING_AUTH = False
     AWS_DEFAULT_ACL = "public-read"
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_ADDRESSING_STYLE = "virtual"
 
-    MEDIA_URL = "https://macnova-machinery-media.s3.us-east-2.amazonaws.com/"
-    MEDIA_ROOT = ""
+    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
+    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+    MEDIA_ROOT = ""  # must be a string (not None) for FileSystemStorage compatibility
 
     DEFAULT_FILE_STORAGE = "fleet.storage_backends.PublicMediaStorage"
 else:
