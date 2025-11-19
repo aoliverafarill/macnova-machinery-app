@@ -30,12 +30,15 @@ elif _secret_key.startswith("'") and _secret_key.endswith("'"):
     _secret_key = _secret_key[1:-1]
 SECRET_KEY = _secret_key
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get(
+# For local development, allow localhost and 127.0.0.1
+# For production, set DJANGO_ALLOWED_HOSTS in environment
+_allowed_hosts = os.environ.get(
     "DJANGO_ALLOWED_HOSTS",
     "127.0.0.1,localhost"
-).split(",")
+)
+ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts.split(",")]
 
 # Application definition
 
@@ -53,6 +56,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",  # Must be after SessionMiddleware, before CommonMiddleware
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -127,7 +131,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "es"  # Default language: Spanish
+
+LANGUAGES = [
+    ("es", "Español"),
+    ("en", "English"),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
 
 TIME_ZONE = "UTC"
 
@@ -153,13 +166,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 USE_S3 = os.environ.get("USE_S3", "False") == "True"
 
-# Log S3 configuration at startup (visible in Render logs)
-import sys
-print(f"[S3 CONFIG] USE_S3 environment variable: {os.environ.get('USE_S3', 'NOT SET')}", file=sys.stderr, flush=True)
-print(f"[S3 CONFIG] USE_S3 evaluated to: {USE_S3}", file=sys.stderr, flush=True)
-
 if USE_S3:
-    print(f"[S3 CONFIG] ✅ S3 is ENABLED - Configuring S3 storage", file=sys.stderr, flush=True)
     INSTALLED_APPS.append("storages")
 
     AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
@@ -177,15 +184,10 @@ if USE_S3:
     MEDIA_ROOT = ""  # must be a string (not None) for FileSystemStorage compatibility
 
     DEFAULT_FILE_STORAGE = "fleet.storage_backends.PublicMediaStorage"
-    print(f"[S3 CONFIG] DEFAULT_FILE_STORAGE set to: {DEFAULT_FILE_STORAGE}", file=sys.stderr, flush=True)
-    print(f"[S3 CONFIG] MEDIA_URL: {MEDIA_URL}", file=sys.stderr, flush=True)
-    print(f"[S3 CONFIG] Bucket: {AWS_STORAGE_BUCKET_NAME}, Region: {AWS_S3_REGION_NAME}", file=sys.stderr, flush=True)
 else:
-    print(f"[S3 CONFIG] ⚠️  S3 is DISABLED - Using local file storage", file=sys.stderr, flush=True)
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
     DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
-    print(f"[S3 CONFIG] DEFAULT_FILE_STORAGE set to: {DEFAULT_FILE_STORAGE}", file=sys.stderr, flush=True)
 
 
 import logging
@@ -208,17 +210,17 @@ LOGGING = {
         },
         "storages": {
             "handlers": ["console"],
-            "level": "DEBUG",  # Log S3 storage operations
+            "level": "WARNING",  # Only log warnings and errors
             "propagate": False,
         },
         "boto3": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": "WARNING",
             "propagate": False,
         },
         "botocore": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": "WARNING",
             "propagate": False,
         },
     },

@@ -1,10 +1,15 @@
 import csv
+import base64
 from decimal import Decimal
+from io import BytesIO
+from PIL import Image
 
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.files.base import ContentFile
+from django.conf import settings
 from django.db.models import (
     F,
     ExpressionWrapper,
@@ -29,6 +34,12 @@ def machine_usage_view(request, qr_slug):
     Public view: operator scans QR, lands here, fills usage report.
     Creates UsageReport + UsagePhotos + ChecklistEntries on POST.
     """
+    from django.utils import translation
+    
+    # Activate Spanish by default if no language is set
+    if not translation.get_language():
+        translation.activate('es')
+    
     machine = get_object_or_404(Machine, qr_slug=qr_slug, is_active=True)
 
     job_sites = JobSite.objects.filter(is_active=True).order_by("name")
@@ -79,7 +90,64 @@ def machine_usage_view(request, qr_slug):
             except JobSite.DoesNotExist:
                 job_site = None
 
-        # ---- 2. Create UsageReport ----
+        # ---- 2. Process Signatures ----
+        def process_signature(signature_data, filename_prefix):
+            """Convert base64 data URL to Django ImageField file."""
+            if not signature_data:
+                return None
+            
+            # Remove data URL prefix (e.g., "data:image/png;base64,")
+            if ',' in signature_data:
+                header, data = signature_data.split(',', 1)
+            else:
+                data = signature_data
+            
+            try:
+                # Decode base64
+                image_data = base64.b64decode(data)
+                
+                # Create PIL Image
+                img = Image.open(BytesIO(image_data))
+                
+                # Convert to RGB if necessary (for PNG with transparency)
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    if img.mode == 'P':
+                        img = img.convert('RGBA')
+                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                    img = background
+                
+                # Save to BytesIO
+                img_io = BytesIO()
+                img.save(img_io, format='PNG')
+                img_io.seek(0)
+                
+                # Create Django ContentFile
+                filename = f"{filename_prefix}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.png"
+                return ContentFile(img_io.read(), name=filename)
+            except Exception as e:
+                # Log error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error processing signature: {e}", exc_info=True)
+                # In production, we might want to raise this, but for now return None
+                return None
+
+        operator_signature_data = request.POST.get("operator_signature_data")
+        administrator_signature_data = request.POST.get("administrator_signature_data")
+        administrator_name = (request.POST.get("administrator_name") or "").strip()
+
+        # Debug logging (only in DEBUG mode)
+        if settings.DEBUG:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.debug(f"Operator signature data length: {len(operator_signature_data) if operator_signature_data else 0}")
+            logger.debug(f"Administrator signature data length: {len(administrator_signature_data) if administrator_signature_data else 0}")
+
+        operator_signature_file = process_signature(operator_signature_data, "operator")
+        administrator_signature_file = process_signature(administrator_signature_data, "administrator")
+
+        # ---- 3. Create UsageReport ----
         usage_report = UsageReport.objects.create(
             machine=machine,
             operator_name=operator_name or "Unknown",
@@ -92,9 +160,12 @@ def machine_usage_view(request, qr_slug):
             latitude=latitude,
             longitude=longitude,
             notes=notes,
+            operator_signature=operator_signature_file,
+            administrator_name=administrator_name,
+            administrator_signature=administrator_signature_file,
         )
 
-        # ---- 3. Create UsagePhotos for uploaded files ----
+        # ---- 4. Create UsagePhotos for uploaded files ----
         photo_fields = [
             ("photo_front", UsagePhoto.FRONT),
             ("photo_back", UsagePhoto.BACK),
@@ -113,7 +184,7 @@ def machine_usage_view(request, qr_slug):
                     image=file_obj,
                 )
 
-        # ---- 4. Create ChecklistEntries ----
+        # ---- 5. Create ChecklistEntries ----
         for item in checklist_items:
             value = request.POST.get(f"check_{item.id}", ChecklistEntry.VALUE_OK)
             comment = (request.POST.get(f"check_comment_{item.id}") or "").strip()
@@ -124,10 +195,10 @@ def machine_usage_view(request, qr_slug):
                 comment=comment,
             )
 
-        # ---- 5. Optional: update machine status here (e.g. to IN_USE / AVAILABLE) ----
+        # ---- 6. Optional: update machine status here (e.g. to IN_USE / AVAILABLE) ----
         # For now we leave it unchanged.
 
-        # ---- 6. Show success page ----
+        # ---- 7. Show success page ----
         return render(
             request,
             "fleet/machine_usage_success.html",
