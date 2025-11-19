@@ -147,30 +147,21 @@ if USE_S3:
 
     AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
     AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
-    AWS_STORAGE_BUCKET_NAME = os.environ["AWS_STORAGE_BUCKET_NAME"]
-    AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "us-east-2")
-    AWS_S3_SIGNATURE_VERSION = os.environ.get("AWS_S3_SIGNATURE_VERSION", "s3v4")
+    AWS_STORAGE_BUCKET_NAME = "macnova-machinery-media"
+    AWS_S3_REGION_NAME = "us-east-2"
 
-    # IMPORTANT: Your bucket uses ACLs → use this!
-    AWS_DEFAULT_ACL = "public-read"
-    AWS_S3_OBJECT_PARAMETERS = {"ACL": AWS_DEFAULT_ACL}
     AWS_QUERYSTRING_AUTH = False
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_S3_ADDRESSING_STYLE = "virtual"
+    AWS_DEFAULT_ACL = "public-read"
 
+    MEDIA_URL = "https://macnova-machinery-media.s3.us-east-2.amazonaws.com/"
+    MEDIA_ROOT = ""
 
-    AWS_S3_CUSTOM_DOMAIN = (
-        f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
-    )
-
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
-    MEDIA_ROOT = ""  # must be a string, not None
-
-    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    DEFAULT_FILE_STORAGE = "fleet.storage_backends.PublicMediaStorage"
 else:
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
     DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+
 
 import logging
 
