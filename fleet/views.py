@@ -3,6 +3,7 @@ import base64
 from decimal import Decimal
 from io import BytesIO
 from PIL import Image
+import urllib.request
 
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
@@ -10,6 +11,7 @@ from django.utils import timezone
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.files.base import ContentFile
 from django.conf import settings
+from django.template.loader import render_to_string
 from django.db.models import (
     F,
     ExpressionWrapper,
@@ -377,5 +379,99 @@ def manager_dashboard_export_csv(request):
                 r.longitude if r.longitude is not None else "",
             ]
         )
+
+    return response
+
+
+@staff_member_required
+def report_detail(request, report_id):
+    """
+    Display complete report details with all photos, checklist, signatures, and map.
+    """
+    report = get_object_or_404(
+        UsageReport.objects.select_related("machine", "job_site").prefetch_related(
+            "photos", "checklist_entries__item"
+        ),
+        pk=report_id,
+    )
+
+    # Get all photos grouped by type
+    photos = report.photos.all().order_by("photo_type")
+    
+    # Get checklist entries ordered by display_order
+    checklist_entries = report.checklist_entries.all().select_related("item").order_by(
+        "item__display_order", "item__label"
+    )
+
+    context = {
+        "report": report,
+        "photos": photos,
+        "checklist_entries": checklist_entries,
+        "has_location": report.latitude is not None and report.longitude is not None,
+    }
+    return render(request, "fleet/report_detail.html", context)
+
+
+@staff_member_required
+def report_pdf(request, report_id):
+    """
+    Generate and download PDF report with all data, images, and map.
+    """
+    try:
+        from weasyprint import HTML, CSS
+        from weasyprint.text.fonts import FontConfiguration
+    except ImportError:
+        return HttpResponse(
+            "PDF generation requires weasyprint. Please install it: pip install weasyprint",
+            status=500,
+        )
+
+    report = get_object_or_404(
+        UsageReport.objects.select_related("machine", "job_site").prefetch_related(
+            "photos", "checklist_entries__item"
+        ),
+        pk=report_id,
+    )
+
+    # Get all photos grouped by type
+    photos = report.photos.all().order_by("photo_type")
+    
+    # Get checklist entries ordered by display_order
+    checklist_entries = report.checklist_entries.all().select_related("item").order_by(
+        "item__display_order", "item__label"
+    )
+
+    # Generate static map URL if location exists
+    map_url = None
+    if report.latitude is not None and report.longitude is not None:
+        # Using OpenStreetMap static map service
+        map_url = (
+            f"https://staticmap.openstreetmap.de/staticmap.php?"
+            f"center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}"
+        )
+
+    context = {
+        "report": report,
+        "photos": photos,
+        "checklist_entries": checklist_entries,
+        "map_url": map_url,
+        "has_location": report.latitude is not None and report.longitude is not None,
+    }
+
+    # Render HTML template
+    html_string = render_to_string("fleet/report_pdf.html", context)
+
+    # Generate PDF
+    # Use the request's absolute URI as base_url so weasyprint can resolve relative URLs
+    # For S3 images, they should already be absolute URLs, but this helps with any relative paths
+    font_config = FontConfiguration()
+    base_url = request.build_absolute_uri("/")
+    html = HTML(string=html_string, base_url=base_url)
+    pdf_file = html.write_pdf(font_config=font_config)
+
+    # Create response
+    response = HttpResponse(pdf_file, content_type="application/pdf")
+    filename = f"report_{report.machine.code}_{report.date.strftime('%Y%m%d')}_{report.id}.pdf"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
     return response

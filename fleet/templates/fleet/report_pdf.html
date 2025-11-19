@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 12mm 14mm;
+        }
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+            font-size: 11.5px;
+            color: #111827;
+            margin: 0;
+            padding: 0;
+        }
+        .card {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 16px 16px 12px;
+            margin-top: 6px;
+            background: #fff;
+            page-break-inside: avoid;
+        }
+        .header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .brand {
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            color: #0b7;
+            font-size: 18px;
+        }
+        .title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .meta {
+            color: #6b7280;
+            font-size: 11.5px;
+        }
+        .section-title {
+            font-weight: 700;
+            margin: 8px 0 6px;
+            color: #0f172a;
+            font-size: 12px;
+        }
+        .kv-grid {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 4px 10px;
+        }
+        .kv-grid-3 {
+            display: grid;
+            grid-template-columns: 180px 1fr 1fr;
+            gap: 4px 10px;
+        }
+        .kv-key {
+            color: #6b7280;
+        }
+        .kv-val {
+            color: #0f172a;
+            font-weight: 500;
+        }
+        .hr {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 8px 0;
+        }
+        .mono {
+            font-variant-numeric: tabular-nums;
+        }
+        .emph {
+            color: #0b7;
+            font-weight: 700;
+        }
+        .footer {
+            margin-top: 4px;
+            color: #6b7280;
+            font-size: 11px;
+            text-align: right;
+        }
+        .note {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f9fafb;
+            border-left: 4px solid #0b7;
+            font-size: 11px;
+            color: #374151;
+            border-radius: 4px;
+        }
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .photo-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+        .photo-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .photo-label {
+            padding: 4px;
+            background: #f9fafb;
+            font-size: 10px;
+            color: #6b7280;
+            text-align: center;
+        }
+        .checklist-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 11px;
+        }
+        .checklist-table th,
+        .checklist-table td {
+            padding: 6px 8px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .checklist-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .status-OK {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-ISSUE {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .status-NA {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .signature-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 8px;
+            background: #f9fafb;
+        }
+        .signature-box img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            background: white;
+        }
+        .signature-label {
+            font-size: 10px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .map-container {
+            margin-top: 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .map-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .notes-box {
+            background: #f9fafb;
+            border-left: 4px solid #0b7;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <div class="brand">Macnova Machinery</div>
+                <div class="meta">Usage Report</div>
+            </div>
+            <div class="title">{{ report.date|date:"F d, Y" }}</div>
+        </div>
+
+        <!-- Report Information -->
+        <div class="section-title">Report Information</div>
+        <div class="kv-grid">
+            <div class="kv-key">Date</div>
+            <div class="kv-val">{{ report.date|date:"F d, Y H:i" }}</div>
+            
+            <div class="kv-key">Machine</div>
+            <div class="kv-val">{{ report.machine.code }} - {{ report.machine.name }}</div>
+            
+            <div class="kv-key">Machine Type</div>
+            <div class="kv-val">{{ report.machine.type|default:"-" }}</div>
+            
+            <div class="kv-key">Machine Status</div>
+            <div class="kv-val">{{ report.machine.get_status_display }}</div>
+            
+            <div class="kv-key">Operator</div>
+            <div class="kv-val">{{ report.operator_name }}</div>
+            
+            <div class="kv-key">Job Site</div>
+            <div class="kv-val">
+                {% if report.job_site %}
+                    {{ report.job_site.code }} - {{ report.job_site.name }}
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <!-- Engine Hours & Fuel -->
+        <div class="section-title">Engine Hours & Fuel</div>
+        <div class="kv-grid mono">
+            <div class="kv-key">Engine Hours (Start)</div>
+            <div class="kv-val">{{ report.engine_hours_start }}</div>
+            
+            <div class="kv-key">Engine Hours (End)</div>
+            <div class="kv-val">{{ report.engine_hours_end }}</div>
+            
+            <div class="kv-key">Hours Used</div>
+            <div class="kv-val emph">{{ report.hours_used|default:"-" }}</div>
+            
+            <div class="kv-key">Fuel Level (Start)</div>
+            <div class="kv-val">
+                {% if report.fuel_level_start is not None %}
+                    {{ report.fuel_level_start }}%
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+            
+            <div class="kv-key">Fuel Level (End)</div>
+            <div class="kv-val">
+                {% if report.fuel_level_end is not None %}
+                    {{ report.fuel_level_end }}%
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+        </div>
+
+        {% if has_location %}
+        <div class="hr"></div>
+        
+        <!-- Location -->
+        <div class="section-title">Location</div>
+        <div class="kv-grid">
+            <div class="kv-key">Latitude</div>
+            <div class="kv-val">{{ report.latitude }}</div>
+            
+            <div class="kv-key">Longitude</div>
+            <div class="kv-val">{{ report.longitude }}</div>
+        </div>
+        
+        {% if map_url %}
+        <div class="map-container">
+            <img src="{{ map_url }}" alt="Report Location Map">
+        </div>
+        {% endif %}
+        {% endif %}
+
+        {% if photos %}
+        <div class="hr"></div>
+        
+        <!-- Photos -->
+        <div class="section-title">Photos ({{ photos|length }})</div>
+        <div class="photos-grid">
+            {% for photo in photos %}
+            <div class="photo-item">
+                <img src="{{ photo.image.url }}" alt="{{ photo.get_photo_type_display }}">
+                <div class="photo-label">{{ photo.get_photo_type_display }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if checklist_entries %}
+        <div class="hr"></div>
+        
+        <!-- Checklist -->
+        <div class="section-title">Inspection Checklist</div>
+        <table class="checklist-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Status</th>
+                    <th>Comment</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in checklist_entries %}
+                <tr>
+                    <td>
+                        <strong>{{ entry.item.label }}</strong>
+                        {% if entry.item.description %}
+                            <div style="font-size: 10px; color: #6b7280; margin-top: 2px;">{{ entry.item.description }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ entry.value }}">
+                            {{ entry.get_value_display }}
+                        </span>
+                    </td>
+                    <td>{{ entry.comment|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if report.notes %}
+        <div class="hr"></div>
+        
+        <!-- Notes -->
+        <div class="section-title">Notes</div>
+        <div class="notes-box">{{ report.notes|linebreaks }}</div>
+        {% endif %}
+
+        <div class="hr"></div>
+        
+        <!-- Signatures -->
+        <div class="section-title">Signatures</div>
+        <div class="signatures">
+            <div class="signature-box">
+                <div class="signature-label">Operator Signature</div>
+                {% if report.operator_signature %}
+                    <img src="{{ report.operator_signature.url }}" alt="Operator Signature">
+                {% else %}
+                    <div style="padding: 2rem; text-align: center; color: #9ca3af; font-size: 10px;">No signature</div>
+                {% endif %}
+            </div>
+            <div class="signature-box">
+                <div class="signature-label">Administrator Signature</div>
+                <div style="font-size: 10px; color: #6b7280; margin-bottom: 4px;">Administrator: {{ report.administrator_name|default:"-" }}</div>
+                {% if report.administrator_signature %}
+                    <img src="{{ report.administrator_signature.url }}" alt="Administrator Signature">
+                {% else %}
+                    <div style="padding: 2rem; text-align: center; color: #9ca3af; font-size: 10px;">No signature</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="footer">
+            Report ID: {{ report.id }} • Generated {{ report.created_at|date:"F d, Y" }} • Macnova Machinery
+        </div>
+    </div>
+</body>
+</html>
+

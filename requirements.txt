@@ -17,3 +17,4 @@ sqlparse==0.5.3
 urllib3==2.5.0
 whitenoise==6.11.0
 python-dotenv==1.2.1
+weasyprint==62.3

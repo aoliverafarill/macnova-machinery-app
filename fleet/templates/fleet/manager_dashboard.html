@@ -257,13 +257,18 @@
                 <th>Engine hours</th>
                 <th>Hours used</th>
                 <th>Photos</th>
+                <th>Actions</th>
             </tr>
             </thead>
             <tbody>
                 {% for r in recent_reports %}
                     <tr>
                         <td>{{ r.date }}</td>
-                        <td>{{ r.machine.code }} - {{ r.machine.name }}</td>
+                        <td>
+                            <a href="{% url 'fleet:report_detail' r.id %}" style="color: #111827; text-decoration: none; font-weight: 500;">
+                                {{ r.machine.code }} - {{ r.machine.name }}
+                            </a>
+                        </td>
                         <td>{{ r.operator_name }}</td>
                         <td>
                             {% if r.job_site %}
@@ -285,10 +290,20 @@
                                 -
                             {% endfor %}
                         </td>
+                        <td>
+                            <a href="{% url 'fleet:report_detail' r.id %}" 
+                               style="font-size:0.75rem; color:#111827; text-decoration:none; margin-right:0.5rem;">
+                                View
+                            </a>
+                            <a href="{% url 'fleet:report_pdf' r.id %}" 
+                               style="font-size:0.75rem; color:#0b7; text-decoration:none;">
+                                PDF
+                            </a>
+                        </td>
                     </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7">No recent reports.</td>
+                    <td colspan="8">No recent reports.</td>
                 </tr>
             {% endfor %}
             </tbody>
