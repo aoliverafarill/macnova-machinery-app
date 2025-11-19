@@ -143,12 +143,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 USE_S3 = os.environ.get("USE_S3", "False") == "True"
 
 if USE_S3:
-    # Add django-storages
     INSTALLED_APPS.append("storages")
 
-    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
+    AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
+    AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
+    AWS_STORAGE_BUCKET_NAME = os.environ["AWS_STORAGE_BUCKET_NAME"]
     AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "us-east-2")
     AWS_S3_SIGNATURE_VERSION = os.environ.get("AWS_S3_SIGNATURE_VERSION", "s3v4")
 
@@ -157,22 +156,16 @@ if USE_S3:
     AWS_S3_FILE_OVERWRITE = False
     AWS_S3_ADDRESSING_STYLE = "virtual"
 
-    # Correct region-aware domain
     AWS_S3_CUSTOM_DOMAIN = (
         f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
     )
 
-    # MEDIA served from S3
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
 
-    # MEDIA_ROOT MUST be None for S3
-    MEDIA_ROOT = None
-
-    # Use S3 for all file & image storage
-    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    # IMPORTANT: MUST be an empty string — not None
+    MEDIA_ROOT = ""
 
 else:
-    # Local dev: serve media locally
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
 
@@ -196,3 +189,8 @@ LOGGING = {
         },
     },
 }
+
+if USE_S3:
+    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+else:
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
