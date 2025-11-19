@@ -4,6 +4,7 @@ from decimal import Decimal
 from io import BytesIO
 from PIL import Image
 import urllib.request
+import urllib.error
 
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
@@ -449,15 +450,18 @@ def report_pdf(request, report_id):
         
         try:
             # Try multiple map services for reliability
+            # Note: Maps are generated on-the-fly, not stored (as per requirements)
+            # If download fails locally, it should work in production (Render has internet access)
             map_services = [
-                # OpenStreetMap static map service
+                # OpenStreetMap static map service (primary)
                 f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}",
-                # Alternative: StaticMap.org (OpenStreetMap based)
+                # Alternative: Same service with different zoom/marker style
                 f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=14&size=600x400&markers={report.latitude},{report.longitude},red",
             ]
             
             for i, map_url in enumerate(map_services):
                 try:
+                    logger.info(f"Attempting to download map from service {i+1}: {map_url[:80]}...")
                     req = urllib.request.Request(map_url)
                     req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
                     with urllib.request.urlopen(req, timeout=10) as response:
@@ -485,14 +489,20 @@ def report_pdf(request, report_id):
                                 
                                 # Convert to base64 for embedding in PDF
                                 map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
-                                logger.info(f"Successfully downloaded map image (service {i+1})")
+                                logger.info(f"Successfully downloaded and processed map image (service {i+1})")
                                 break
                             except Exception as img_error:
                                 logger.warning(f"PIL processing failed for map: {img_error}")
                                 # If PIL processing fails, try using original data if it looks like an image
                                 if map_image_data[:4] in [b'\x89PNG', b'\xff\xd8\xff', b'GIF8']:
                                     map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
+                                    logger.info(f"Using original map image data (service {i+1})")
                                     break
+                        else:
+                            logger.warning(f"Map service {i+1} returned invalid data (length: {len(map_image_data)}, content-type: {content_type})")
+                except urllib.error.URLError as url_error:
+                    # DNS/network errors are common locally but should work in production
+                    logger.warning(f"Network error downloading map from service {i+1}: {url_error}. This may work in production.")
                 except Exception as url_error:
                     logger.warning(f"Failed to download map from service {i+1}: {url_error}")
                     continue

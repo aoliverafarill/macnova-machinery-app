@@ -5,7 +5,20 @@
     <style>
         @page {
             size: A4;
-            margin: 15mm 18mm;
+            margin: 15mm 18mm 60mm 18mm; /* Extra bottom margin for signatures/footer */
+        }
+        
+        /* Define running element for signatures/footer */
+        .signature-footer-container {
+            position: running(signature-footer);
+        }
+        
+        /* Place running element at bottom of page */
+        @page {
+            @bottom-center {
+                content: element(signature-footer);
+                vertical-align: bottom;
+            }
         }
         body {
             -webkit-print-color-adjust: exact;
@@ -267,15 +280,12 @@
             font-size: 10px;
             font-weight: 600;
         }
-        /* Spacer to push signatures/footer to bottom - simple approach */
-        .bottom-spacer {
-            height: 400px;
+        /* Signature/footer container for running element */
+        .signature-footer-container {
             page-break-inside: avoid;
         }
-        /* Ensure signatures and footer stay together as one block */
         .signatures-card {
             page-break-inside: avoid;
-            margin-top: 0;
             margin-bottom: 0;
         }
         .footer-card {
@@ -283,10 +293,6 @@
             page-break-before: avoid;
             margin-top: 0;
             margin-bottom: 0;
-        }
-        /* Keep signatures and footer together */
-        .signatures-card + .footer-card {
-            page-break-before: avoid;
         }
     </style>
 </head>
@@ -449,37 +455,36 @@
     </div>
     {% endif %}
 
-    <!-- Spacer to push signatures/footer to bottom -->
-    <div class="bottom-spacer"></div>
-
-    <!-- Signatures and Footer - Treated as one block at bottom -->
-    <div class="card signatures-card">
-        <div class="section-title">Signatures</div>
-        <div class="signatures">
-            <div class="signature-box">
-                <div class="signature-label">Operator Signature</div>
-                {% if report.operator_signature %}
-                    <img src="{{ report.operator_signature.url }}" alt="Operator Signature">
-                {% else %}
-                    <div style="padding: 2rem; text-align: center; color: #9ca3af; font-size: 10px;">No signature</div>
-                {% endif %}
-            </div>
-            <div class="signature-box">
-                <div class="signature-label">Administrator Signature</div>
-                <div class="signature-admin-name">Administrator: {{ report.administrator_name|default:"-" }}</div>
-                {% if report.administrator_signature %}
-                    <img src="{{ report.administrator_signature.url }}" alt="Administrator Signature">
-                {% else %}
-                    <div style="padding: 2rem; text-align: center; color: #9ca3af; font-size: 10px;">No signature</div>
-                {% endif %}
+    <!-- Signatures and Footer - Using CSS margin boxes to place at bottom -->
+    <div class="signature-footer-container">
+        <div class="card signatures-card">
+            <div class="section-title">Signatures</div>
+            <div class="signatures">
+                <div class="signature-box">
+                    <div class="signature-label">Operator Signature</div>
+                    {% if report.operator_signature %}
+                        <img src="{{ report.operator_signature.url }}" alt="Operator Signature">
+                    {% else %}
+                        <div style="padding: 2rem; text-align: center; color: #9ca3af; font-size: 10px;">No signature</div>
+                    {% endif %}
+                </div>
+                <div class="signature-box">
+                    <div class="signature-label">Administrator Signature</div>
+                    <div class="signature-admin-name">Administrator: {{ report.administrator_name|default:"-" }}</div>
+                    {% if report.administrator_signature %}
+                        <img src="{{ report.administrator_signature.url }}" alt="Administrator Signature">
+                    {% else %}
+                        <div style="padding: 2rem; text-align: center; color: #9ca3af; font-size: 10px;">No signature</div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Footer - Part of same block as signatures -->
-    <div class="card footer-card">
-        <div class="footer">
-            Report ID: {{ report.id }} • Generated {{ report.created_at|date:"F d, Y" }} • Macnova Machinery
+        <!-- Footer - Part of same block as signatures -->
+        <div class="card footer-card">
+            <div class="footer">
+                Report ID: {{ report.id }} • Generated {{ report.created_at|date:"F d, Y" }} • Macnova Machinery
+            </div>
         </div>
     </div>
 </body>
