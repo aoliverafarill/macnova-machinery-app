@@ -143,7 +143,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 USE_S3 = os.environ.get("USE_S3", "False") == "True"
 
 if USE_S3:
-    # django-storages
+    # Add django-storages
     INSTALLED_APPS.append("storages")
 
     AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
@@ -152,25 +152,27 @@ if USE_S3:
     AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "us-east-2")
     AWS_S3_SIGNATURE_VERSION = os.environ.get("AWS_S3_SIGNATURE_VERSION", "s3v4")
 
-    # Public-read style media (no signed URLs)
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_FILE_OVERWRITE = False
     AWS_S3_ADDRESSING_STYLE = "virtual"
 
-    # e.g. macnova-machinery-media.s3.us-east-2.amazonaws.com
+    # Correct region-aware domain
     AWS_S3_CUSTOM_DOMAIN = (
         f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
     )
 
-    # Media served directly from S3
+    # MEDIA served from S3
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+
+    # MEDIA_ROOT MUST be None for S3
     MEDIA_ROOT = None
 
-    # Use S3 for all FileField/ImageField
+    # Use S3 for all file & image storage
     DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 else:
-    # Local dev / no S3
+    # Local dev: serve media locally
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
+se
