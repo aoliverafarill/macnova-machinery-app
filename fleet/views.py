@@ -441,20 +441,33 @@ def report_pdf(request, report_id):
         "item__display_order", "item__label"
     )
 
-    # Generate static map URL if location exists
-    map_url = None
+    # Generate static map image as base64 if location exists
+    map_image_base64 = None
     if report.latitude is not None and report.longitude is not None:
-        # Using OpenStreetMap static map service
-        map_url = (
-            f"https://staticmap.openstreetmap.de/staticmap.php?"
-            f"center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}"
-        )
+        try:
+            # Download static map from OpenStreetMap
+            map_url = (
+                f"https://staticmap.openstreetmap.de/staticmap.php?"
+                f"center={report.latitude},{report.longitude}&zoom=15&size=600x400"
+                f"&markers={report.latitude},{report.longitude},red"
+            )
+            req = urllib.request.Request(map_url)
+            req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)')
+            with urllib.request.urlopen(req, timeout=10) as response:
+                map_image_data = response.read()
+                # Convert to base64 for embedding in PDF
+                map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
+        except Exception as e:
+            # If map download fails, log but don't break PDF generation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Could not download map image for PDF: {e}")
 
     context = {
         "report": report,
         "photos": photos,
         "checklist_entries": checklist_entries,
-        "map_url": map_url,
+        "map_image_base64": map_image_base64,
         "has_location": report.latitude is not None and report.longitude is not None,
     }
 
