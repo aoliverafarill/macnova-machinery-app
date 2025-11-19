@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report submitted - {{ machine.code }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 1rem;
+            background: #f3f4f6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+        }
+        p {
+            font-size: 0.95rem;
+            color: #4b5563;
+        }
+        .summary {
+            text-align: left;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        .summary dt {
+            font-weight: 600;
+        }
+        .summary dd {
+            margin: 0 0 0.5rem 0;
+        }
+        .btn {
+            margin-top: 1.5rem;
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            background: #111827;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .note {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Report submitted ✅</h1>
+    <p>Thank you, the usage report for <strong>{{ machine.code }} - {{ machine.name }}</strong> has been saved.</p>
+
+    <dl class="summary">
+        <dt>Operator</dt>
+        <dd>{{ usage_report.operator_name }}</dd>
+
+        <dt>Date</dt>
+        <dd>{{ usage_report.date }}</dd>
+
+        <dt>Engine hours</dt>
+        <dd>{{ usage_report.engine_hours_start }} → {{ usage_report.engine_hours_end }}
+            (used: {{ usage_report.hours_used }})</dd>
+
+        <dt>Fuel level</dt>
+        <dd>
+            {% if usage_report.fuel_level_start is not None %}
+                {{ usage_report.fuel_level_start }}% → {{ usage_report.fuel_level_end }}%
+            {% else %}
+                Not specified
+            {% endif %}
+        </dd>
+
+        <dt>Job site</dt>
+        <dd>
+            {% if usage_report.job_site %}
+                {{ usage_report.job_site.code }} - {{ usage_report.job_site.name }}
+            {% else %}
+                Not specified
+            {% endif %}
+        </dd>
+    </dl>
+
+    <a href="#" class="btn" onclick="window.history.back(); return false;">Back</a>
+
+    <p class="note">
+        You can now close this page. If necessary, another report can be created by scanning the QR code again.
+    </p>
+</div>
+</body>
+</html>

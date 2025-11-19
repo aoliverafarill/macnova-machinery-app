@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Machinery Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 1rem;
+            background: #f3f4f6;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .filters, .cards, .section {
+            margin-bottom: 1rem;
+        }
+        .filters form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            background: #ffffff;
+            padding: 0.75rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            align-items: flex-end;
+        }
+        .filters label {
+            font-size: 0.8rem;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+        .filters input,
+        .filters select {
+            font-size: 0.85rem;
+            padding: 0.35rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
+        }
+        .filters .field {
+            display: flex;
+            flex-direction: column;
+        }
+        .filters button {
+            padding: 0.45rem 0.9rem;
+            border-radius: 5px;
+            border: none;
+            background: #111827;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .csv-link {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 1rem;
+            text-decoration: none;
+            color: #111827;
+            background: #e5e7eb;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .csv-link:hover {
+            background: #d1d5db;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+        }
+        .card {
+            background: #ffffff;
+            padding: 0.75rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .card h2 {
+            font-size: 0.9rem;
+            margin: 0 0 0.25rem 0;
+            color: #4b5563;
+        }
+        .card .value {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .section h2 {
+            font-size: 1rem;
+            margin-bottom: 0.4rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        th, td {
+            padding: 0.45rem 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: #6b7280;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.1rem 0.45rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .status-AVAILABLE { background: #dcfce7; color: #166534; }
+        .status-IN_USE { background: #dbeafe; color: #1d4ed8; }
+        .status-MAINTENANCE { background: #fef9c3; color: #854d0e; }
+        .status-OUT_OF_SERVICE { background: #fee2e2; color: #b91c1c; }
+        .status-TRANSIT { background: #e0f2fe; color: #0369a1; }
+        .note {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Machinery usage dashboard</h1>
+
+    <div class="filters">
+        <form method="get">
+            <div class="field">
+                <label for="id_date_from">From date</label>
+                <input type="date" name="date_from" id="id_date_from" value="{{ date_from }}">
+            </div>
+            <div class="field">
+                <label for="id_date_to">To date</label>
+                <input type="date" name="date_to" id="id_date_to" value="{{ date_to }}">
+            </div>
+            <div class="field">
+                <label for="id_machine">Machine</label>
+                <select name="machine" id="id_machine">
+                    <option value="">All</option>
+                    {% for m in machines %}
+                        <option value="{{ m.id }}"
+                            {% if selected_machine_id == m.id %}selected{% endif %}>
+                            {{ m.code }} - {{ m.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="id_job_site">Job site</label>
+                <select name="job_site" id="id_job_site">
+                    <option value="">All</option>
+                    {% for s in job_sites %}
+                        <option value="{{ s.id }}"
+                            {% if selected_job_site_id == s.id %}selected{% endif %}>
+                            {{ s.code }} - {{ s.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label>&nbsp;</label>
+                <button type="submit">Apply filters</button>
+            </div>
+        </form>
+
+        <div class="note">
+            Showing {{ total_reports }} reports.
+
+            <!-- CSV DOWNLOAD BUTTON -->
+            <a class="csv-link"
+               href="{% url 'fleet:manager_dashboard_export_csv' %}?{{ request.GET.urlencode }}">
+                Download CSV
+            </a>
+        </div>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <h2>Total reports</h2>
+            <div class="value">{{ total_reports }}</div>
+        </div>
+        <div class="card">
+            <h2>Total hours used</h2>
+            <div class="value">{{ total_hours|default:"0" }}</div>
+        </div>
+        <div class="card">
+            <h2>Machines used</h2>
+            <div class="value">{{ machines_used }}</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Per-machine summary</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Machine</th>
+                <th>Status</th>
+                <th>Reports</th>
+                <th>Total hours</th>
+                <th>Last usage</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in per_machine %}
+                <tr>
+                    <td>{{ row.machine__code }} - {{ row.machine__name }}</td>
+                    <td>
+                        <span class="status-pill status-{{ row.machine__status }}">
+                            {{ row.machine__status|title }}
+                        </span>
+                    </td>
+                    <td>{{ row.report_count }}</td>
+                    <td>{{ row.total_hours|default:"0" }}</td>
+                    <td>{{ row.last_usage }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">No reports found for the selected filters.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Recent reports</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Machine</th>
+                <th>Operator</th>
+                <th>Job site</th>
+                <th>Engine hours</th>
+                <th>Hours used</th>
+                <th>Photos</th>
+            </tr>
+            </thead>
+            <tbody>
+                {% for r in recent_reports %}
+                    <tr>
+                        <td>{{ r.date }}</td>
+                        <td>{{ r.machine.code }} - {{ r.machine.name }}</td>
+                        <td>{{ r.operator_name }}</td>
+                        <td>
+                            {% if r.job_site %}
+                                {{ r.job_site.code }} - {{ r.job_site.name }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ r.engine_hours_start }} → {{ r.engine_hours_end }}</td>
+                        <td>{{ r.hours_used }}</td>
+                        <td>
+                            {% for photo in r.photos.all|slice:":3" %}
+                                <a href="{{ photo.image.url }}" target="_blank">
+                                    <img src="{{ photo.image.url }}"
+                                         alt="{{ photo.get_photo_type_display }}"
+                                         style="height:40px;border-radius:4px;margin-right:4px;">
+                                </a>
+                            {% empty %}
+                                -
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">No recent reports.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

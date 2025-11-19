@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Usage report - {{ machine.code }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 1rem;
+            background: #f3f4f6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .field {
+            margin-bottom: 0.75rem;
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
+            font-size: 0.9rem;
+        }
+        textarea {
+            min-height: 80px;
+        }
+        .photo-group {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: #374151;
+        }
+        .photo-group input[type="file"] {
+            width: 100%;
+            margin-top: 0.25rem;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: #111827;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .note {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+        .checklist-item {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            background: #f9fafb;
+            border-radius: 4px;
+        }
+        .checklist-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .checklist-options {
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+
+    <script>
+        // Try to get GPS on load and fill hidden fields
+        window.addEventListener("load", function () {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    const latInput = document.getElementById("id_latitude");
+                    const lonInput = document.getElementById("id_longitude");
+                    if (latInput && lonInput) {
+                        latInput.value = position.coords.latitude.toFixed(6);
+                        lonInput.value = position.coords.longitude.toFixed(6);
+                    }
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+<div class="container">
+    <h1>Machine: {{ machine.code }} - {{ machine.name }}</h1>
+    <p class="note">
+        Status: {{ machine.get_status_display }}<br>
+        Type: {{ machine.type }} | Brand: {{ machine.brand }} {{ machine.model }}
+    </p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <h2>Operator & usage</h2>
+
+        <div class="field">
+            <label for="id_operator_name">Operator name</label>
+            <input type="text" name="operator_name" id="id_operator_name" required>
+        </div>
+
+        <div class="field">
+            <label for="id_engine_hours_start">Engine hours (start)</label>
+            <input type="number" step="0.01" name="engine_hours_start" id="id_engine_hours_start" required>
+        </div>
+
+        <div class="field">
+            <label for="id_engine_hours_end">Engine hours (end)</label>
+            <input type="number" step="0.01" name="engine_hours_end" id="id_engine_hours_end" required>
+        </div>
+
+        <div class="field">
+            <label for="id_fuel_level_start">Fuel level at start (%)</label>
+            <input type="number" name="fuel_level_start" id="id_fuel_level_start" min="0" max="100">
+        </div>
+
+        <div class="field">
+            <label for="id_fuel_level_end">Fuel level at end (%)</label>
+            <input type="number" name="fuel_level_end" id="id_fuel_level_end" min="0" max="100">
+        </div>
+
+        <div class="field">
+            <label for="id_job_site">Job site</label>
+            <select name="job_site" id="id_job_site">
+                <option value="">-- Select job site --</option>
+                {% for site in job_sites %}
+                    <option value="{{ site.id }}">{{ site.code }} - {{ site.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="id_notes">Notes</label>
+            <textarea name="notes" id="id_notes" placeholder="Any issues, damage, or comments..."></textarea>
+        </div>
+
+        <!-- Hidden GPS fields filled by JS -->
+        <input type="hidden" name="latitude" id="id_latitude">
+        <input type="hidden" name="longitude" id="id_longitude">
+
+        <h2>Photos</h2>
+        <p class="note">Take clear photos of each side of the machine.</p>
+
+        <div class="photo-group">
+            <label>Front</label>
+            <input type="file" name="photo_front" accept="image/*" capture="environment">
+        </div>
+        <div class="photo-group">
+            <label>Back</label>
+            <input type="file" name="photo_back" accept="image/*" capture="environment">
+        </div>
+        <div class="photo-group">
+            <label>Left side</label>
+            <input type="file" name="photo_left" accept="image/*" capture="environment">
+        </div>
+        <div class="photo-group">
+            <label>Right side</label>
+            <input type="file" name="photo_right" accept="image/*" capture="environment">
+        </div>
+        <div class="photo-group">
+            <label>Wheels / Tracks</label>
+            <input type="file" name="photo_wheels" accept="image/*" capture="environment">
+        </div>
+        <div class="photo-group">
+            <label>Cockpit / Controls</label>
+            <input type="file" name="photo_cockpit" accept="image/*" capture="environment">
+        </div>
+
+        <h2>Checklist</h2>
+        <p class="note">Mark each item as OK, Issue, or N/A.</p>
+        {% for item in checklist_items %}
+            <div class="checklist-item">
+                <div class="checklist-label">{{ item.label }}</div>
+                {% if item.description %}
+                    <div class="note">{{ item.description }}</div>
+                {% endif %}
+                <div class="checklist-options">
+                    <label>
+                        <input type="radio" name="check_{{ item.id }}" value="OK" checked> OK
+                    </label>
+                    <label>
+                        <input type="radio" name="check_{{ item.id }}" value="ISSUE"> Issue
+                    </label>
+                    <label>
+                        <input type="radio" name="check_{{ item.id }}" value="NA"> N/A
+                    </label>
+                    <br>
+                    <input
+                        type="text"
+                        name="check_comment_{{ item.id }}"
+                        placeholder="Comment if there's an issue (optional)"
+                    >
+                </div>
+            </div>
+        {% empty %}
+            <p class="note">No checklist items defined yet.</p>
+        {% endfor %}
+
+        <div class="field" style="margin-top: 1rem;">
+            <button type="submit" class="btn-primary">Submit report</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>
