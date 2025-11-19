@@ -93,6 +93,22 @@ class UsagePhotoAdmin(admin.ModelAdmin):
     list_display = ("usage_report", "photo_type", "created_at")
     list_filter = ("photo_type",)
     search_fields = ("usage_report__machine__code",)
+    
+    def save_model(self, request, obj, form, change):
+        """Override to add logging for file uploads."""
+        import sys
+        print(f"[ADMIN] Saving UsagePhoto - Image field: {obj.image}", file=sys.stderr, flush=True)
+        if obj.image:
+            print(f"[ADMIN] Image name: {obj.image.name}", file=sys.stderr, flush=True)
+            print(f"[ADMIN] Storage: {obj.image.storage}", file=sys.stderr, flush=True)
+        try:
+            super().save_model(request, obj, form, change)
+            print(f"[ADMIN] ✅ UsagePhoto saved successfully", file=sys.stderr, flush=True)
+        except Exception as e:
+            print(f"[ADMIN] ❌ Error saving UsagePhoto: {type(e).__name__}: {str(e)}", file=sys.stderr, flush=True)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            raise
 
 
 # -------------------------
