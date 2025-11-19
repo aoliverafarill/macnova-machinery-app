@@ -146,7 +146,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 USE_S3 = os.environ.get("USE_S3", "False") == "True"
 
+# Log S3 configuration at startup (visible in Render logs)
+import sys
+print(f"[S3 CONFIG] USE_S3 environment variable: {os.environ.get('USE_S3', 'NOT SET')}", file=sys.stderr, flush=True)
+print(f"[S3 CONFIG] USE_S3 evaluated to: {USE_S3}", file=sys.stderr, flush=True)
+
 if USE_S3:
+    print(f"[S3 CONFIG] ✅ S3 is ENABLED - Configuring S3 storage", file=sys.stderr, flush=True)
     INSTALLED_APPS.append("storages")
 
     AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
@@ -164,10 +170,15 @@ if USE_S3:
     MEDIA_ROOT = ""  # must be a string (not None) for FileSystemStorage compatibility
 
     DEFAULT_FILE_STORAGE = "fleet.storage_backends.PublicMediaStorage"
+    print(f"[S3 CONFIG] DEFAULT_FILE_STORAGE set to: {DEFAULT_FILE_STORAGE}", file=sys.stderr, flush=True)
+    print(f"[S3 CONFIG] MEDIA_URL: {MEDIA_URL}", file=sys.stderr, flush=True)
+    print(f"[S3 CONFIG] Bucket: {AWS_STORAGE_BUCKET_NAME}, Region: {AWS_S3_REGION_NAME}", file=sys.stderr, flush=True)
 else:
+    print(f"[S3 CONFIG] ⚠️  S3 is DISABLED - Using local file storage", file=sys.stderr, flush=True)
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
     DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+    print(f"[S3 CONFIG] DEFAULT_FILE_STORAGE set to: {DEFAULT_FILE_STORAGE}", file=sys.stderr, flush=True)
 
 
 import logging
