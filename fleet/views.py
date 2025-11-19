@@ -445,18 +445,49 @@ def report_pdf(request, report_id):
     map_image_base64 = None
     if report.latitude is not None and report.longitude is not None:
         try:
-            # Download static map from OpenStreetMap
-            map_url = (
-                f"https://staticmap.openstreetmap.de/staticmap.php?"
-                f"center={report.latitude},{report.longitude}&zoom=15&size=600x400"
-                f"&markers={report.latitude},{report.longitude},red"
-            )
-            req = urllib.request.Request(map_url)
-            req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)')
-            with urllib.request.urlopen(req, timeout=10) as response:
-                map_image_data = response.read()
-                # Convert to base64 for embedding in PDF
-                map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
+            # Try multiple map services for reliability
+            map_services = [
+                # OpenStreetMap static map
+                f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude},red",
+                # Alternative: Nominatim-based static map
+                f"https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-s+ff0000({report.longitude},{report.latitude})/{report.longitude},{report.latitude},15,0/600x400@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw",
+            ]
+            
+            for map_url in map_services:
+                try:
+                    req = urllib.request.Request(map_url)
+                    req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        map_image_data = response.read()
+                        
+                        # Verify it's actually an image
+                        if len(map_image_data) > 0:
+                            # Process image with PIL to ensure it's in the right format
+                            try:
+                                img = Image.open(BytesIO(map_image_data))
+                                # Convert to RGB if necessary
+                                if img.mode in ('RGBA', 'LA', 'P'):
+                                    background = Image.new('RGB', img.size, (255, 255, 255))
+                                    if img.mode == 'P':
+                                        img = img.convert('RGBA')
+                                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                                    img = background
+                                
+                                # Save to BytesIO as PNG
+                                img_io = BytesIO()
+                                img.save(img_io, format='PNG')
+                                img_io.seek(0)
+                                map_image_data = img_io.read()
+                            except Exception:
+                                # If PIL processing fails, use original data
+                                pass
+                            
+                            # Convert to base64 for embedding in PDF
+                            map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
+                            break
+                except Exception:
+                    continue
+                    
         except Exception as e:
             # If map download fails, log but don't break PDF generation
             import logging

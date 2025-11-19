@@ -27,30 +27,31 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .header-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            border: none;
             border-radius: 10px;
-            padding: 20px;
+            padding: 24px;
             margin-bottom: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .header-title {
             font-size: 24px;
             font-weight: 700;
-            color: #0f172a;
+            color: #ffffff;
             margin: 0 0 4px 0;
         }
         .header-subtitle {
             font-size: 13px;
-            color: #6b7280;
+            color: rgba(255,255,255,0.9);
             margin: 0;
         }
         .header-date {
             font-size: 14px;
             font-weight: 600;
-            color: #0f172a;
+            color: #ffffff;
             text-align: right;
         }
         .section-title {
@@ -59,7 +60,7 @@
             margin: 0 0 12px 0;
             color: #0f172a;
             padding-bottom: 8px;
-            border-bottom: 2px solid #e5e7eb;
+            border-bottom: 2px solid #3b82f6;
         }
         .kv-grid {
             display: grid;
@@ -77,8 +78,8 @@
             font-size: 11.5px;
         }
         .kv-val strong {
-            color: #0b7;
-            font-weight: 700;
+            color: #6b7280;
+            font-weight: 600;
         }
         .hr {
             height: 1px;
@@ -125,11 +126,11 @@
             border-bottom: 1px solid #e5e7eb;
         }
         .checklist-table th {
-            background: #f9fafb;
+            background: #f0f9ff;
             font-weight: 600;
             font-size: 10px;
             text-transform: uppercase;
-            color: #6b7280;
+            color: #1e40af;
             letter-spacing: 0.5px;
         }
         .checklist-table tr:last-child td {
@@ -153,6 +154,30 @@
         .status-NA {
             background: #f3f4f6;
             color: #6b7280;
+        }
+        /* Machine Status Colors */
+        .status-AVAILABLE {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-IN_USE {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        .status-MAINTENANCE {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .status-OUT_OF_SERVICE {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .status-TRANSIT {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        .signatures-wrapper {
+            page-break-before: auto;
         }
         .signatures {
             display: grid;
@@ -194,15 +219,22 @@
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             overflow: hidden;
+            background: #f9fafb;
         }
         .map-container img {
             width: 100%;
             height: auto;
             display: block;
         }
+        .map-placeholder {
+            padding: 40px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 11px;
+        }
         .notes-box {
-            background: #f9fafb;
-            border-left: 4px solid #0b7;
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
             padding: 12px 16px;
             border-radius: 4px;
             margin-top: 12px;
@@ -210,22 +242,38 @@
             color: #374151;
             line-height: 1.6;
         }
+        .footer-wrapper {
+            page-break-before: auto;
+            margin-top: auto;
+        }
         .footer {
             margin-top: 16px;
             padding-top: 12px;
-            border-top: 1px solid #e5e7eb;
+            border-top: 2px solid #3b82f6;
             color: #6b7280;
             font-size: 10px;
             text-align: center;
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
         }
         .meta-badge {
             display: inline-block;
-            padding: 3px 8px;
-            background: #e5e7eb;
+            padding: 4px 8px;
             border-radius: 4px;
             font-size: 10px;
             font-weight: 600;
-            color: #374151;
+        }
+        /* Ensure signatures and footer stay together at bottom */
+        .signatures-card {
+            page-break-inside: avoid;
+            page-break-before: always;
+            margin-top: 0;
+        }
+        .footer-card {
+            page-break-inside: avoid;
+            page-break-before: avoid;
+            margin-top: 0;
         }
     </style>
 </head>
@@ -254,7 +302,9 @@
             
             <div class="kv-key">Machine Status</div>
             <div class="kv-val">
-                <span class="meta-badge">{{ report.machine.get_status_display }}</span>
+                <span class="meta-badge status-{{ report.machine.status }}">
+                    {{ report.machine.get_status_display }}
+                </span>
             </div>
             
             <div class="kv-key">Operator</div>
@@ -316,11 +366,16 @@
             <div class="kv-val">{{ report.longitude }}</div>
         </div>
         
-        {% if map_image_base64 %}
         <div class="map-container">
-            <img src="data:image/png;base64,{{ map_image_base64 }}" alt="Report Location Map">
+            {% if map_image_base64 %}
+                <img src="data:image/png;base64,{{ map_image_base64 }}" alt="Report Location Map">
+            {% else %}
+                <div class="map-placeholder">
+                    Map location: {{ report.latitude }}, {{ report.longitude }}<br>
+                    (Map image could not be loaded)
+                </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
     {% endif %}
 
@@ -381,8 +436,8 @@
     </div>
     {% endif %}
 
-    <!-- Signatures -->
-    <div class="card">
+    <!-- Signatures - Locked at bottom -->
+    <div class="card signatures-card">
         <div class="section-title">Signatures</div>
         <div class="signatures">
             <div class="signature-box">
@@ -405,8 +460,8 @@
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="card">
+    <!-- Footer - Locked at bottom -->
+    <div class="card footer-card">
         <div class="footer">
             Report ID: {{ report.id }} • Generated {{ report.created_at|date:"F d, Y" }} • Macnova Machinery
         </div>
