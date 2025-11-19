@@ -480,12 +480,13 @@ def report_pdf(request, report_id):
         try:
             # Try multiple map services for reliability
             # Note: Maps are generated on-the-fly, not stored (as per requirements)
-            # If download fails locally, it should work in production (Render has internet access)
             map_services = [
-                # OpenStreetMap static map service (primary)
+                # OpenStreetMap static map service (primary) - using .org domain
+                f"https://staticmap.openstreetmap.org/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}",
+                # Alternative: Using .de domain as fallback
                 f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}",
-                # Alternative: Same service with different zoom/marker style
-                f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=14&size=600x400&markers={report.latitude},{report.longitude},red",
+                # Another alternative: Different zoom level
+                f"https://staticmap.openstreetmap.org/staticmap.php?center={report.latitude},{report.longitude}&zoom=14&size=600x400&markers={report.latitude},{report.longitude},red",
             ]
             
             for i, map_url in enumerate(map_services):
@@ -530,8 +531,13 @@ def report_pdf(request, report_id):
                         else:
                             logger.warning(f"Map service {i+1} returned invalid data (length: {len(map_image_data)}, content-type: {content_type})")
                 except urllib.error.URLError as url_error:
-                    # DNS/network errors are common locally but should work in production
-                    logger.warning(f"Network error downloading map from service {i+1}: {url_error}. This may work in production.")
+                    # DNS/network errors - try next service
+                    error_msg = str(url_error)
+                    if "Name or service not known" in error_msg or "getaddrinfo failed" in error_msg:
+                        logger.warning(f"DNS error for service {i+1}: {url_error}. Trying next service...")
+                    else:
+                        logger.warning(f"Network error downloading map from service {i+1}: {url_error}")
+                    continue
                 except Exception as url_error:
                     logger.warning(f"Failed to download map from service {i+1}: {url_error}")
                     continue
