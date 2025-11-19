@@ -1,16 +1,18 @@
-# Python
+# Python bytecode
 __pycache__/
 *.py[cod]
 
 # SQLite dev DB
 db.sqlite3
 
-# Environment
+# Virtual env
 venv/
+
+# Environment files
 .env
 
-# Media files (local)
+# Local media (uploads)
 media/
 
-# Staticfiles (generated)
+# Collected static files
 staticfiles/
