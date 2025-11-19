@@ -223,5 +223,10 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
+        "fleet": {
+            "handlers": ["console"],
+            "level": "INFO",  # Show info, warnings, and errors for fleet app
+            "propagate": False,
+        },
     },
 }

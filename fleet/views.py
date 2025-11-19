@@ -450,10 +450,10 @@ def report_pdf(request, report_id):
         try:
             # Try multiple map services for reliability
             map_services = [
-                # OpenStreetMap static map (simpler URL format)
+                # OpenStreetMap static map service
                 f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}",
-                # Alternative: OpenStreetMap with different format
-                f"https://www.openstreetmap.org/export/embed.html?bbox={report.longitude-0.01},{report.latitude-0.01},{report.longitude+0.01},{report.latitude+0.01}&layer=mapnik&marker={report.latitude},{report.longitude}",
+                # Alternative: StaticMap.org (OpenStreetMap based)
+                f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=14&size=600x400&markers={report.latitude},{report.longitude},red",
             ]
             
             for i, map_url in enumerate(map_services):
