@@ -151,7 +151,9 @@ if USE_S3:
     AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "us-east-2")
     AWS_S3_SIGNATURE_VERSION = os.environ.get("AWS_S3_SIGNATURE_VERSION", "s3v4")
 
-    AWS_DEFAULT_ACL = None
+    # IMPORTANT: Your bucket uses ACLs → use this!
+    AWS_DEFAULT_ACL = "public-read"
+
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_FILE_OVERWRITE = False
     AWS_S3_ADDRESSING_STYLE = "virtual"
@@ -161,13 +163,13 @@ if USE_S3:
     )
 
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+    MEDIA_ROOT = ""  # must be a string, not None
 
-    # IMPORTANT: MUST be an empty string — not None
-    MEDIA_ROOT = ""
-
+    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 else:
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 
 import logging
 
@@ -189,8 +191,3 @@ LOGGING = {
         },
     },
 }
-
-if USE_S3:
-    DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-else:
-    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
