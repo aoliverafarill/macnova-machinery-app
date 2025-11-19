@@ -478,17 +478,15 @@ def report_pdf(request, report_id):
         logger = logging.getLogger(__name__)
         
         try:
-            # Try multiple map services for reliability
-            # Note: Maps are generated on-the-fly, not stored (as per requirements)
+            # Try to download map from external service
+            # If that fails, generate a simple placeholder map
             map_services = [
-                # OpenStreetMap static map service (primary) - using .org domain
+                # Try OSM static services (may fail due to DNS issues)
                 f"https://staticmap.openstreetmap.org/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}",
-                # Alternative: Using .de domain as fallback
                 f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}",
-                # Another alternative: Different zoom level
-                f"https://staticmap.openstreetmap.org/staticmap.php?center={report.latitude},{report.longitude}&zoom=14&size=600x400&markers={report.latitude},{report.longitude},red",
             ]
             
+            map_downloaded = False
             for i, map_url in enumerate(map_services):
                 try:
                     logger.info(f"Attempting to download map from service {i+1}: {map_url[:80]}...")
@@ -520,6 +518,7 @@ def report_pdf(request, report_id):
                                 # Convert to base64 for embedding in PDF
                                 map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
                                 logger.info(f"Successfully downloaded and processed map image (service {i+1})")
+                                map_downloaded = True
                                 break
                             except Exception as img_error:
                                 logger.warning(f"PIL processing failed for map: {img_error}")
@@ -527,13 +526,14 @@ def report_pdf(request, report_id):
                                 if map_image_data[:4] in [b'\x89PNG', b'\xff\xd8\xff', b'GIF8']:
                                     map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
                                     logger.info(f"Using original map image data (service {i+1})")
+                                    map_downloaded = True
                                     break
                         else:
                             logger.warning(f"Map service {i+1} returned invalid data (length: {len(map_image_data)}, content-type: {content_type})")
                 except urllib.error.URLError as url_error:
                     # DNS/network errors - try next service
                     error_msg = str(url_error)
-                    if "Name or service not known" in error_msg or "getaddrinfo failed" in error_msg:
+                    if "Name or service not known" in error_msg or "getaddrinfo failed" in error_msg or "No address associated" in error_msg:
                         logger.warning(f"DNS error for service {i+1}: {url_error}. Trying next service...")
                     else:
                         logger.warning(f"Network error downloading map from service {i+1}: {url_error}")
@@ -541,12 +541,60 @@ def report_pdf(request, report_id):
                 except Exception as url_error:
                     logger.warning(f"Failed to download map from service {i+1}: {url_error}")
                     continue
+            
+            # If all services failed, generate a simple placeholder map
+            if not map_downloaded:
+                logger.info("All map services failed, generating placeholder map")
+                try:
+                    from PIL import ImageDraw, ImageFont
+                    
+                    # Create a simple map placeholder
+                    img = Image.new('RGB', (600, 400), color=(240, 240, 240))
+                    draw = ImageDraw.Draw(img)
+                    
+                    # Draw border
+                    draw.rectangle([(0, 0), (599, 399)], outline=(200, 200, 200), width=2)
+                    
+                    # Draw a simple marker
+                    center_x, center_y = 300, 200
+                    # Draw marker circle
+                    draw.ellipse([center_x-10, center_y-10, center_x+10, center_y+10], 
+                                fill=(255, 0, 0), outline=(200, 0, 0), width=2)
+                    # Draw marker pointer
+                    draw.polygon([(center_x, center_y+10), (center_x-5, center_y+20), (center_x+5, center_y+20)],
+                                fill=(255, 0, 0), outline=(200, 0, 0))
+                    
+                    # Add coordinates text
+                    try:
+                        # Try to use a default font
+                        font = ImageFont.load_default()
+                    except:
+                        font = None
+                    
+                    coord_text = f"Location: {report.latitude:.6f}, {report.longitude:.6f}"
+                    # Get text size
+                    if font:
+                        bbox = draw.textbbox((0, 0), coord_text, font=font)
+                        text_width = bbox[2] - bbox[0]
+                    else:
+                        text_width = len(coord_text) * 6  # Approximate
+                    
+                    text_x = (600 - text_width) // 2
+                    draw.text((text_x, 350), coord_text, fill=(100, 100, 100), font=font)
+                    
+                    # Convert to base64
+                    img_io = BytesIO()
+                    img.save(img_io, format='PNG')
+                    img_io.seek(0)
+                    map_image_data = img_io.read()
+                    map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
+                    logger.info("Generated placeholder map successfully")
+                except Exception as placeholder_error:
+                    logger.warning(f"Failed to generate placeholder map: {placeholder_error}")
                     
         except Exception as e:
-            # If map download fails, log but don't break PDF generation
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Could not download map image for PDF: {e}")
+            # If map generation completely fails, log but don't break PDF generation
+            logger.warning(f"Could not generate map image for PDF: {e}")
 
     context = {
         "report": report,
