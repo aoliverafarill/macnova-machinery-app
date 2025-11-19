@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import (
     Machine,
     JobSite,
@@ -111,12 +112,27 @@ class UsageReportAdmin(admin.ModelAdmin):
         }),
         ("Signatures", {
             "fields": ("operator_signature", "administrator_name", "administrator_signature"),
-            "description": "Signatures can be uploaded here manually if they weren't captured during form submission. Both operator and administrator signatures are required."
+            "description": "Signatures can be uploaded here manually if they weren't captured during form submission. Both operator and administrator signatures are required. If signatures are empty, you can upload image files here."
         }),
         ("Notes", {
             "fields": ("notes",)
         }),
     )
+    
+    # Add read-only preview methods for signatures (optional - can be added to readonly_fields if needed)
+    def operator_signature_preview(self, obj):
+        """Show operator signature preview in admin."""
+        if obj.operator_signature:
+            return format_html('<img src="{}" style="max-width: 200px; max-height: 100px;" />', obj.operator_signature.url)
+        return "No signature uploaded"
+    operator_signature_preview.short_description = "Operator Signature Preview"
+    
+    def administrator_signature_preview(self, obj):
+        """Show administrator signature preview in admin."""
+        if obj.administrator_signature:
+            return format_html('<img src="{}" style="max-width: 200px; max-height: 100px;" />', obj.administrator_signature.url)
+        return "No signature uploaded"
+    administrator_signature_preview.short_description = "Administrator Signature Preview"
 
 
 # -------------------------
