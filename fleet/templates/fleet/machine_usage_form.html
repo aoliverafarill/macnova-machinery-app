@@ -1,8 +1,9 @@
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE|default:'es' }}">
 <head>
     <meta charset="UTF-8">
-    <title>Usage report - {{ machine.code }}</title>
+    <title>{% trans "Usage report" %} - {{ machine.code }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
@@ -84,6 +85,9 @@
         }
     </style>
 
+    <!-- SignaturePad.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.0/dist/signature_pad.umd.min.js"></script>
+
     <script>
         // Try to get GPS on load and fill hidden fields
         window.addEventListener("load", function () {
@@ -97,51 +101,142 @@
                     }
                 });
             }
+
+            // Initialize signature pads
+            function initSignaturePad(canvasId, padName) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                
+                // Set canvas size properly for mobile
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = 150;
+                
+                const pad = new SignaturePad(canvas, {
+                    backgroundColor: 'rgb(255, 255, 255)',
+                    penColor: 'rgb(0, 0, 0)',
+                    minWidth: 1,
+                    maxWidth: 3,
+                });
+                
+                // Handle window resize
+                window.addEventListener('resize', function() {
+                    const rect = canvas.getBoundingClientRect();
+                    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    canvas.width = rect.width * ratio;
+                    canvas.height = 150 * ratio;
+                    canvas.getContext('2d').scale(ratio, ratio);
+                    pad.clear(); // Clear on resize
+                });
+                
+                window[padName] = pad;
+            }
+            
+            initSignaturePad('operator_signature_canvas', 'operatorPad');
+            initSignaturePad('administrator_signature_canvas', 'adminPad');
         });
+
+        // Translation strings for JavaScript
+        const OPERATOR_SIGNATURE_REQUIRED = "{% trans 'Operator signature is required' %}";
+        const ADMIN_SIGNATURE_REQUIRED = "{% trans 'Administrator signature is required' %}";
+
+        // Convert signature to base64 and set in hidden input before form submit
+        function prepareSignatures() {
+            const form = document.querySelector('form[method="post"]');
+            if (!form) return;
+
+            form.addEventListener('submit', function(e) {
+                // Operator signature
+                if (window.operatorPad && !window.operatorPad.isEmpty()) {
+                    const operatorData = window.operatorPad.toDataURL('image/png');
+                    const operatorInput = document.getElementById('operator_signature_data');
+                    if (operatorInput) {
+                        operatorInput.value = operatorData;
+                    }
+                } else {
+                    e.preventDefault();
+                    alert(OPERATOR_SIGNATURE_REQUIRED);
+                    return false;
+                }
+
+                // Administrator signature
+                if (window.adminPad && !window.adminPad.isEmpty()) {
+                    const adminData = window.adminPad.toDataURL('image/png');
+                    const adminInput = document.getElementById('administrator_signature_data');
+                    if (adminInput) {
+                        adminInput.value = adminData;
+                    }
+                } else {
+                    e.preventDefault();
+                    alert(ADMIN_SIGNATURE_REQUIRED);
+                    return false;
+                }
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('load', prepareSignatures);
     </script>
 </head>
 <body>
 <div class="container">
-    <h1>Machine: {{ machine.code }} - {{ machine.name }}</h1>
+    <!-- Language Switcher -->
+    <div style="text-align: right; margin-bottom: 1rem;">
+        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+            {% csrf_token %}
+            <input name="next" type="hidden" value="{{ request.path }}">
+            <select name="language" onchange="this.form.submit()" style="padding: 0.3rem; border-radius: 4px; border: 1px solid #d1d5db;">
+                {% get_current_language as CURRENT_LANGUAGE %}
+                {% get_available_languages as LANGUAGES %}
+                {% for lang_code, lang_name in LANGUAGES %}
+                    <option value="{{ lang_code }}" {% if lang_code == CURRENT_LANGUAGE|default:'es' %}selected{% endif %}>
+                        {{ lang_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <h1>{% trans "Machine" %}: {{ machine.code }} - {{ machine.name }}</h1>
     <p class="note">
-        Status: {{ machine.get_status_display }}<br>
-        Type: {{ machine.type }} | Brand: {{ machine.brand }} {{ machine.model }}
+        {% trans "Status" %}: {{ machine.get_status_display }}<br>
+        {% trans "Type" %}: {{ machine.type }} | {% trans "Brand" %}: {{ machine.brand }} {{ machine.model }}
     </p>
 
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
-        <h2>Operator & usage</h2>
+        <h2>{% trans "Operator & usage" %}</h2>
 
         <div class="field">
-            <label for="id_operator_name">Operator name</label>
+            <label for="id_operator_name">{% trans "Operator name" %}</label>
             <input type="text" name="operator_name" id="id_operator_name" required>
         </div>
 
         <div class="field">
-            <label for="id_engine_hours_start">Engine hours (start)</label>
+            <label for="id_engine_hours_start">{% trans "Engine hours (start)" %}</label>
             <input type="number" step="0.01" name="engine_hours_start" id="id_engine_hours_start" required>
         </div>
 
         <div class="field">
-            <label for="id_engine_hours_end">Engine hours (end)</label>
+            <label for="id_engine_hours_end">{% trans "Engine hours (end)" %}</label>
             <input type="number" step="0.01" name="engine_hours_end" id="id_engine_hours_end" required>
         </div>
 
         <div class="field">
-            <label for="id_fuel_level_start">Fuel level at start (%)</label>
+            <label for="id_fuel_level_start">{% trans "Fuel level at start (%)" %}</label>
             <input type="number" name="fuel_level_start" id="id_fuel_level_start" min="0" max="100">
         </div>
 
         <div class="field">
-            <label for="id_fuel_level_end">Fuel level at end (%)</label>
+            <label for="id_fuel_level_end">{% trans "Fuel level at end (%)" %}</label>
             <input type="number" name="fuel_level_end" id="id_fuel_level_end" min="0" max="100">
         </div>
 
         <div class="field">
-            <label for="id_job_site">Job site</label>
+            <label for="id_job_site">{% trans "Job site" %}</label>
             <select name="job_site" id="id_job_site">
-                <option value="">-- Select job site --</option>
+                <option value="">-- {% trans "Select job site" %} --</option>
                 {% for site in job_sites %}
                     <option value="{{ site.id }}">{{ site.code }} - {{ site.name }}</option>
                 {% endfor %}
@@ -149,44 +244,44 @@
         </div>
 
         <div class="field">
-            <label for="id_notes">Notes</label>
-            <textarea name="notes" id="id_notes" placeholder="Any issues, damage, or comments..."></textarea>
+            <label for="id_notes">{% trans "Notes" %}</label>
+            <textarea name="notes" id="id_notes" placeholder="{% trans 'Any issues, damage, or comments...' %}"></textarea>
         </div>
 
         <!-- Hidden GPS fields filled by JS -->
         <input type="hidden" name="latitude" id="id_latitude">
         <input type="hidden" name="longitude" id="id_longitude">
 
-        <h2>Photos</h2>
-        <p class="note">Take clear photos of each side of the machine.</p>
+        <h2>{% trans "Photos" %}</h2>
+        <p class="note">{% trans "Take clear photos of each side of the machine." %}</p>
 
         <div class="photo-group">
-            <label>Front</label>
+            <label>{% trans "Front" %}</label>
             <input type="file" name="photo_front" accept="image/*" capture="environment">
         </div>
         <div class="photo-group">
-            <label>Back</label>
+            <label>{% trans "Back" %}</label>
             <input type="file" name="photo_back" accept="image/*" capture="environment">
         </div>
         <div class="photo-group">
-            <label>Left side</label>
+            <label>{% trans "Left side" %}</label>
             <input type="file" name="photo_left" accept="image/*" capture="environment">
         </div>
         <div class="photo-group">
-            <label>Right side</label>
+            <label>{% trans "Right side" %}</label>
             <input type="file" name="photo_right" accept="image/*" capture="environment">
         </div>
         <div class="photo-group">
-            <label>Wheels / Tracks</label>
+            <label>{% trans "Wheels / Tracks" %}</label>
             <input type="file" name="photo_wheels" accept="image/*" capture="environment">
         </div>
         <div class="photo-group">
-            <label>Cockpit / Controls</label>
+            <label>{% trans "Cockpit / Controls" %}</label>
             <input type="file" name="photo_cockpit" accept="image/*" capture="environment">
         </div>
 
-        <h2>Checklist</h2>
-        <p class="note">Mark each item as OK, Issue, or N/A.</p>
+        <h2>{% trans "Checklist" %}</h2>
+        <p class="note">{% trans "Mark each item as OK, Issue, or N/A." %}</p>
         {% for item in checklist_items %}
             <div class="checklist-item">
                 <div class="checklist-label">{{ item.label }}</div>
@@ -195,28 +290,60 @@
                 {% endif %}
                 <div class="checklist-options">
                     <label>
-                        <input type="radio" name="check_{{ item.id }}" value="OK" checked> OK
+                        <input type="radio" name="check_{{ item.id }}" value="OK" checked> {% trans "OK" %}
                     </label>
                     <label>
-                        <input type="radio" name="check_{{ item.id }}" value="ISSUE"> Issue
+                        <input type="radio" name="check_{{ item.id }}" value="ISSUE"> {% trans "Issue" %}
                     </label>
                     <label>
-                        <input type="radio" name="check_{{ item.id }}" value="NA"> N/A
+                        <input type="radio" name="check_{{ item.id }}" value="NA"> {% trans "N/A" %}
                     </label>
                     <br>
                     <input
                         type="text"
                         name="check_comment_{{ item.id }}"
-                        placeholder="Comment if there's an issue (optional)"
+                        placeholder="{% trans 'Comment if there is an issue (optional)' %}"
                     >
                 </div>
             </div>
         {% empty %}
-            <p class="note">No checklist items defined yet.</p>
+            <p class="note">{% trans "No checklist items defined yet." %}</p>
         {% endfor %}
 
+        <h2>{% trans "Signatures" %}</h2>
+        <p class="note">{% trans "Both signatures are required. Please sign in the boxes below." %}</p>
+
+        <!-- Operator Signature -->
+        <div class="field" style="margin-bottom: 1.5rem;">
+            <label>{% trans "Operator Signature" %} *</label>
+            <div style="border: 2px solid #d1d5db; border-radius: 4px; background: white; position: relative;">
+                <canvas id="operator_signature_canvas" style="width: 100%; height: 150px; touch-action: none;"></canvas>
+            </div>
+            <button type="button" onclick="if(window.operatorPad) window.operatorPad.clear();" style="margin-top: 0.5rem; padding: 0.4rem 0.8rem; background: #6b7280; color: white; border: none; border-radius: 4px; font-size: 0.85rem;">
+                {% trans "Clear" %}
+            </button>
+            <input type="hidden" name="operator_signature_data" id="operator_signature_data">
+        </div>
+
+        <!-- Administrator Name and Signature -->
+        <div class="field" style="margin-bottom: 1rem;">
+            <label for="id_administrator_name">{% trans "Administrator Name" %} *</label>
+            <input type="text" name="administrator_name" id="id_administrator_name" required>
+        </div>
+
+        <div class="field" style="margin-bottom: 1.5rem;">
+            <label>{% trans "Administrator Signature" %} *</label>
+            <div style="border: 2px solid #d1d5db; border-radius: 4px; background: white; position: relative;">
+                <canvas id="administrator_signature_canvas" style="width: 100%; height: 150px; touch-action: none;"></canvas>
+            </div>
+            <button type="button" onclick="if(window.adminPad) window.adminPad.clear();" style="margin-top: 0.5rem; padding: 0.4rem 0.8rem; background: #6b7280; color: white; border: none; border-radius: 4px; font-size: 0.85rem;">
+                {% trans "Clear" %}
+            </button>
+            <input type="hidden" name="administrator_signature_data" id="administrator_signature_data">
+        </div>
+
         <div class="field" style="margin-top: 1rem;">
-            <button type="submit" class="btn-primary">Submit report</button>
+            <button type="submit" class="btn-primary">{% trans "Submit report" %}</button>
         </div>
     </form>
 </div>

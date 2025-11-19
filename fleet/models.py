@@ -187,6 +187,27 @@ class UsageReport(models.Model):
 
     notes = models.TextField(blank=True)
 
+    # Signatures
+    operator_signature = models.ImageField(
+        upload_to="signatures/",
+        storage=storage,
+        null=True,
+        blank=True,
+        help_text="Operator signature",
+    )
+    administrator_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Name of the administrator receiving the machine",
+    )
+    administrator_signature = models.ImageField(
+        upload_to="signatures/",
+        storage=storage,
+        null=True,
+        blank=True,
+        help_text="Administrator signature",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

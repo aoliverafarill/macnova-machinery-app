@@ -68,6 +68,7 @@ class UsageReportAdmin(admin.ModelAdmin):
     list_display = (
         "machine",
         "operator_name",
+        "administrator_name",
         "date",
         "engine_hours_start",
         "engine_hours_end",
@@ -75,13 +76,33 @@ class UsageReportAdmin(admin.ModelAdmin):
         "fuel_level_start",
         "fuel_level_end",
         "job_site",
-        "latitude",
-        "longitude",
         "created_at",
     )
     list_filter = ("machine", "job_site", "date")
-    search_fields = ("machine__code", "operator_name")
+    search_fields = ("machine__code", "operator_name", "administrator_name")
+    readonly_fields = ("operator_signature", "administrator_signature")
     inlines = [UsagePhotoInline, ChecklistEntryInline]
+    
+    fieldsets = (
+        ("Basic Information", {
+            "fields": ("machine", "operator_name", "date", "job_site")
+        }),
+        ("Engine Hours", {
+            "fields": ("engine_hours_start", "engine_hours_end")
+        }),
+        ("Fuel Levels", {
+            "fields": ("fuel_level_start", "fuel_level_end")
+        }),
+        ("Location", {
+            "fields": ("latitude", "longitude")
+        }),
+        ("Signatures", {
+            "fields": ("operator_signature", "administrator_name", "administrator_signature")
+        }),
+        ("Notes", {
+            "fields": ("notes",)
+        }),
+    )
 
 
 # -------------------------
@@ -94,21 +115,7 @@ class UsagePhotoAdmin(admin.ModelAdmin):
     list_filter = ("photo_type",)
     search_fields = ("usage_report__machine__code",)
     
-    def save_model(self, request, obj, form, change):
-        """Override to add logging for file uploads."""
-        import sys
-        print(f"[ADMIN] Saving UsagePhoto - Image field: {obj.image}", file=sys.stderr, flush=True)
-        if obj.image:
-            print(f"[ADMIN] Image name: {obj.image.name}", file=sys.stderr, flush=True)
-            print(f"[ADMIN] Storage: {obj.image.storage}", file=sys.stderr, flush=True)
-        try:
-            super().save_model(request, obj, form, change)
-            print(f"[ADMIN] ✅ UsagePhoto saved successfully", file=sys.stderr, flush=True)
-        except Exception as e:
-            print(f"[ADMIN] ❌ Error saving UsagePhoto: {type(e).__name__}: {str(e)}", file=sys.stderr, flush=True)
-            import traceback
-            traceback.print_exc(file=sys.stderr)
-            raise
+    # Removed debug logging - was only needed for troubleshooting S3 uploads
 
 
 # -------------------------

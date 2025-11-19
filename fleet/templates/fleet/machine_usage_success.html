@@ -1,8 +1,9 @@
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE|default:'es' }}">
 <head>
     <meta charset="UTF-8">
-    <title>Report submitted - {{ machine.code }}</title>
+    <title>{% trans "Report submitted" %} - {{ machine.code }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
@@ -60,43 +61,43 @@
 </head>
 <body>
 <div class="container">
-    <h1>Report submitted ✅</h1>
-    <p>Thank you, the usage report for <strong>{{ machine.code }} - {{ machine.name }}</strong> has been saved.</p>
+    <h1>{% trans "Report submitted" %} ✅</h1>
+    <p>{% blocktrans %}Thank you, the usage report for <strong>{{ machine.code }} - {{ machine.name }}</strong> has been saved.{% endblocktrans %}</p>
 
     <dl class="summary">
-        <dt>Operator</dt>
+        <dt>{% trans "Operator" %}</dt>
         <dd>{{ usage_report.operator_name }}</dd>
 
-        <dt>Date</dt>
+        <dt>{% trans "Date" %}</dt>
         <dd>{{ usage_report.date }}</dd>
 
-        <dt>Engine hours</dt>
+        <dt>{% trans "Engine hours" %}</dt>
         <dd>{{ usage_report.engine_hours_start }} → {{ usage_report.engine_hours_end }}
-            (used: {{ usage_report.hours_used }})</dd>
+            ({% trans "used" %}: {{ usage_report.hours_used }})</dd>
 
-        <dt>Fuel level</dt>
+        <dt>{% trans "Fuel level" %}</dt>
         <dd>
             {% if usage_report.fuel_level_start is not None %}
                 {{ usage_report.fuel_level_start }}% → {{ usage_report.fuel_level_end }}%
             {% else %}
-                Not specified
+                {% trans "Not specified" %}
             {% endif %}
         </dd>
 
-        <dt>Job site</dt>
+        <dt>{% trans "Job site" %}</dt>
         <dd>
             {% if usage_report.job_site %}
                 {{ usage_report.job_site.code }} - {{ usage_report.job_site.name }}
             {% else %}
-                Not specified
+                {% trans "Not specified" %}
             {% endif %}
         </dd>
     </dl>
 
-    <a href="#" class="btn" onclick="window.history.back(); return false;">Back</a>
+    <a href="#" class="btn" onclick="window.history.back(); return false;">{% trans "Go back" %}</a>
 
     <p class="note">
-        You can now close this page. If necessary, another report can be created by scanning the QR code again.
+        {% trans "You can now close this page. If necessary, another report can be created by scanning the QR code again." %}
     </p>
 </div>
 </body>
