@@ -89,8 +89,13 @@
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.0/dist/signature_pad.umd.min.js"></script>
 
     <script>
-        // Try to get GPS on load and fill hidden fields
-        window.addEventListener("load", function () {
+        // Translation strings for JavaScript
+        const OPERATOR_SIGNATURE_REQUIRED = "{% trans 'Operator signature is required' %}";
+        const ADMIN_SIGNATURE_REQUIRED = "{% trans 'Administrator signature is required' %}";
+
+        // Initialize everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Try to get GPS and fill hidden fields
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function (position) {
                     const latInput = document.getElementById("id_latitude");
@@ -105,7 +110,10 @@
             // Initialize signature pads
             function initSignaturePad(canvasId, padName) {
                 const canvas = document.getElementById(canvasId);
-                if (!canvas) return;
+                if (!canvas) {
+                    console.error('Canvas not found:', canvasId);
+                    return;
+                }
                 
                 // Set canvas size properly for mobile
                 const rect = canvas.getBoundingClientRect();
@@ -130,52 +138,76 @@
                 });
                 
                 window[padName] = pad;
+                console.log('Initialized signature pad:', padName);
             }
             
             initSignaturePad('operator_signature_canvas', 'operatorPad');
             initSignaturePad('administrator_signature_canvas', 'adminPad');
-        });
 
-        // Translation strings for JavaScript
-        const OPERATOR_SIGNATURE_REQUIRED = "{% trans 'Operator signature is required' %}";
-        const ADMIN_SIGNATURE_REQUIRED = "{% trans 'Administrator signature is required' %}";
-
-        // Convert signature to base64 and set in hidden input before form submit
-        function prepareSignatures() {
+            // Set up form submit handler to capture signatures
             const form = document.querySelector('form[method="post"]');
-            if (!form) return;
+            if (!form) {
+                console.error('Form not found');
+                return;
+            }
 
             form.addEventListener('submit', function(e) {
-                // Operator signature
+                console.log('Form submit triggered');
+                
+                // Get hidden input elements
+                const operatorInput = document.getElementById('operator_signature_data');
+                const adminInput = document.getElementById('administrator_signature_data');
+                
+                if (!operatorInput || !adminInput) {
+                    console.error('Signature input fields not found');
+                    e.preventDefault();
+                    alert('Error: Signature fields not found. Please refresh the page.');
+                    return false;
+                }
+
+                // Capture operator signature
                 if (window.operatorPad && !window.operatorPad.isEmpty()) {
                     const operatorData = window.operatorPad.toDataURL('image/png');
-                    const operatorInput = document.getElementById('operator_signature_data');
-                    if (operatorInput) {
-                        operatorInput.value = operatorData;
-                    }
+                    operatorInput.value = operatorData;
+                    console.log('Operator signature captured:', operatorData.length, 'chars');
                 } else {
+                    console.error('Operator signature is empty or pad not initialized');
                     e.preventDefault();
                     alert(OPERATOR_SIGNATURE_REQUIRED);
                     return false;
                 }
 
-                // Administrator signature
+                // Capture administrator signature
                 if (window.adminPad && !window.adminPad.isEmpty()) {
                     const adminData = window.adminPad.toDataURL('image/png');
-                    const adminInput = document.getElementById('administrator_signature_data');
-                    if (adminInput) {
-                        adminInput.value = adminData;
-                    }
+                    adminInput.value = adminData;
+                    console.log('Administrator signature captured:', adminData.length, 'chars');
                 } else {
+                    console.error('Administrator signature is empty or pad not initialized');
                     e.preventDefault();
                     alert(ADMIN_SIGNATURE_REQUIRED);
                     return false;
                 }
-            });
-        }
 
-        // Initialize on load
-        window.addEventListener('load', prepareSignatures);
+                // Verify data was set
+                if (!operatorInput.value || operatorInput.value.length === 0) {
+                    console.error('Operator signature data not set in input');
+                    e.preventDefault();
+                    alert('Error: Failed to capture operator signature. Please try again.');
+                    return false;
+                }
+                
+                if (!adminInput.value || adminInput.value.length === 0) {
+                    console.error('Administrator signature data not set in input');
+                    e.preventDefault();
+                    alert('Error: Failed to capture administrator signature. Please try again.');
+                    return false;
+                }
+
+                console.log('Signatures captured successfully, submitting form...');
+                // Allow form to submit normally
+            });
+        });
     </script>
 </head>
 <body>
