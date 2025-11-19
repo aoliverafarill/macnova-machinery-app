@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# SQLite dev DB
+db.sqlite3
+
+# Environment
+venv/
+.env
+
+# Media files (local)
+media/
+
+# Staticfiles (generated)
+staticfiles/
