@@ -1,0 +1,7 @@
+Django==5.2.8
+gunicorn
+psycopg2-binary
+Pillow
+django-extensions
+django-debug-toolbar
+
