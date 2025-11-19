@@ -1,5 +1,11 @@
 from django.db import models
+from django.conf import settings
 import uuid
+
+# Function to get storage at runtime (called when field is accessed)
+def get_storage():
+    from django.core.files.storage import default_storage
+    return default_storage
 
 
 class JobSite(models.Model):
@@ -214,7 +220,10 @@ class UsagePhoto(models.Model):
         choices=PHOTO_TYPE_CHOICES,
         default=OTHER,
     )
-    image = models.ImageField(upload_to="usage_photos/")
+    image = models.ImageField(
+        upload_to="usage_photos/",
+        storage=get_storage  # Pass callable - Django will call it at runtime
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
