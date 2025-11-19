@@ -142,11 +142,11 @@ LOCALE_PATHS = [
     BASE_DIR / "locale",
 ]
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "America/Mexico_City"  # Mexico City timezone (UTC-6)
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = True  # Keep True to store datetimes in UTC in database, but display in Mexico City time
 
 
 # Static files (CSS, JavaScript, Images)
