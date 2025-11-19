@@ -96,7 +96,11 @@ def machine_usage_view(request, qr_slug):
         # ---- 2. Process Signatures ----
         def process_signature(signature_data, filename_prefix):
             """Convert base64 data URL to Django ImageField file."""
+            import logging
+            logger = logging.getLogger(__name__)
+            
             if not signature_data:
+                logger.warning(f"Empty signature data for {filename_prefix}")
                 return None
             
             # Remove data URL prefix (e.g., "data:image/png;base64,")
@@ -108,6 +112,9 @@ def machine_usage_view(request, qr_slug):
             try:
                 # Decode base64
                 image_data = base64.b64decode(data)
+                if not image_data or len(image_data) < 100:  # Sanity check
+                    logger.warning(f"Decoded signature data too small for {filename_prefix}: {len(image_data) if image_data else 0} bytes")
+                    return None
                 
                 # Create PIL Image
                 img = Image.open(BytesIO(image_data))
@@ -126,29 +133,39 @@ def machine_usage_view(request, qr_slug):
                 img_io.seek(0)
                 
                 # Create Django ContentFile
+                # Note: Don't include "signatures/" in filename - upload_to handles that
                 filename = f"{filename_prefix}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.png"
-                return ContentFile(img_io.read(), name=filename)
+                file_content = img_io.read()
+                logger.info(f"Created signature file {filename} with {len(file_content)} bytes")
+                return ContentFile(file_content, name=filename)
             except Exception as e:
                 # Log error for debugging
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error processing signature: {e}", exc_info=True)
-                # In production, we might want to raise this, but for now return None
+                logger.error(f"Error processing signature for {filename_prefix}: {e}", exc_info=True)
                 return None
 
         operator_signature_data = request.POST.get("operator_signature_data")
         administrator_signature_data = request.POST.get("administrator_signature_data")
         administrator_name = (request.POST.get("administrator_name") or "").strip()
 
-        # Debug logging (only in DEBUG mode)
-        if settings.DEBUG:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.debug(f"Operator signature data length: {len(operator_signature_data) if operator_signature_data else 0}")
-            logger.debug(f"Administrator signature data length: {len(administrator_signature_data) if administrator_signature_data else 0}")
+        # Log signature data reception (always log in production for debugging)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Received operator signature data: {len(operator_signature_data) if operator_signature_data else 0} chars")
+        logger.info(f"Received administrator signature data: {len(administrator_signature_data) if administrator_signature_data else 0} chars")
 
         operator_signature_file = process_signature(operator_signature_data, "operator")
         administrator_signature_file = process_signature(administrator_signature_data, "administrator")
+
+        # Log signature processing results
+        if operator_signature_file:
+            logger.info(f"Successfully processed operator signature: {operator_signature_file.name}")
+        else:
+            logger.warning("Failed to process operator signature - file is None")
+        
+        if administrator_signature_file:
+            logger.info(f"Successfully processed administrator signature: {administrator_signature_file.name}")
+        else:
+            logger.warning("Failed to process administrator signature - file is None")
 
         # ---- 3. Create UsageReport ----
         usage_report = UsageReport.objects.create(
@@ -167,6 +184,18 @@ def machine_usage_view(request, qr_slug):
             administrator_name=administrator_name,
             administrator_signature=administrator_signature_file,
         )
+        
+        # Log after save to verify signatures were saved
+        logger.info(f"Created UsageReport {usage_report.id}")
+        if usage_report.operator_signature:
+            logger.info(f"Operator signature saved: {usage_report.operator_signature.name} (URL: {usage_report.operator_signature.url})")
+        else:
+            logger.warning(f"UsageReport {usage_report.id} has no operator signature after save")
+        
+        if usage_report.administrator_signature:
+            logger.info(f"Administrator signature saved: {usage_report.administrator_signature.name} (URL: {usage_report.administrator_signature.url})")
+        else:
+            logger.warning(f"UsageReport {usage_report.id} has no administrator signature after save")
 
         # ---- 4. Create UsagePhotos for uploaded files ----
         photo_fields = [
