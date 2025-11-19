@@ -76,12 +76,25 @@ class UsageReportAdmin(admin.ModelAdmin):
         "fuel_level_start",
         "fuel_level_end",
         "job_site",
+        "has_signatures",
         "created_at",
     )
     list_filter = ("machine", "job_site", "date")
     search_fields = ("machine__code", "operator_name", "administrator_name")
-    readonly_fields = ("operator_signature", "administrator_signature")
+    # Signatures are editable in admin so they can be added/updated manually if needed
     inlines = [UsagePhotoInline, ChecklistEntryInline]
+    
+    def has_signatures(self, obj):
+        """Display checkmark if both signatures exist."""
+        has_op = bool(obj.operator_signature)
+        has_admin = bool(obj.administrator_signature)
+        if has_op and has_admin:
+            return "✓ Both"
+        elif has_op or has_admin:
+            return "⚠ Partial"
+        else:
+            return "✗ None"
+    has_signatures.short_description = "Signatures"
     
     fieldsets = (
         ("Basic Information", {
@@ -97,7 +110,8 @@ class UsageReportAdmin(admin.ModelAdmin):
             "fields": ("latitude", "longitude")
         }),
         ("Signatures", {
-            "fields": ("operator_signature", "administrator_name", "administrator_signature")
+            "fields": ("operator_signature", "administrator_name", "administrator_signature"),
+            "description": "Signatures can be uploaded here manually if they weren't captured during form submission. Both operator and administrator signatures are required."
         }),
         ("Notes", {
             "fields": ("notes",)
