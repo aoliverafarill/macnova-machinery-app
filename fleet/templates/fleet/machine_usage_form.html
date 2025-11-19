@@ -145,14 +145,17 @@
             initSignaturePad('administrator_signature_canvas', 'adminPad');
 
             // Set up form submit handler to capture signatures
-            const form = document.querySelector('form[method="post"]');
+            // Select the main form by ID to avoid selecting the language switcher form
+            const form = document.getElementById('usage-report-form');
             if (!form) {
-                console.error('Form not found');
+                console.error('Main form not found');
                 return;
             }
 
             form.addEventListener('submit', function(e) {
                 console.log('Form submit triggered');
+                console.log('window.operatorPad:', window.operatorPad);
+                console.log('window.adminPad:', window.adminPad);
                 
                 // Get hidden input elements
                 const operatorInput = document.getElementById('operator_signature_data');
@@ -166,28 +169,42 @@
                 }
 
                 // Capture operator signature
-                if (window.operatorPad && !window.operatorPad.isEmpty()) {
-                    const operatorData = window.operatorPad.toDataURL('image/png');
-                    operatorInput.value = operatorData;
-                    console.log('Operator signature captured:', operatorData.length, 'chars');
-                } else {
-                    console.error('Operator signature is empty or pad not initialized');
+                if (!window.operatorPad) {
+                    console.error('Operator signature pad not initialized');
+                    e.preventDefault();
+                    alert('Error: Signature pad not initialized. Please refresh the page.');
+                    return false;
+                }
+                
+                if (window.operatorPad.isEmpty()) {
+                    console.error('Operator signature is empty');
                     e.preventDefault();
                     alert(OPERATOR_SIGNATURE_REQUIRED);
                     return false;
                 }
+                
+                const operatorData = window.operatorPad.toDataURL('image/png');
+                operatorInput.value = operatorData;
+                console.log('Operator signature captured:', operatorData.length, 'chars');
 
                 // Capture administrator signature
-                if (window.adminPad && !window.adminPad.isEmpty()) {
-                    const adminData = window.adminPad.toDataURL('image/png');
-                    adminInput.value = adminData;
-                    console.log('Administrator signature captured:', adminData.length, 'chars');
-                } else {
-                    console.error('Administrator signature is empty or pad not initialized');
+                if (!window.adminPad) {
+                    console.error('Administrator signature pad not initialized');
+                    e.preventDefault();
+                    alert('Error: Administrator signature pad not initialized. Please refresh the page.');
+                    return false;
+                }
+                
+                if (window.adminPad.isEmpty()) {
+                    console.error('Administrator signature is empty');
                     e.preventDefault();
                     alert(ADMIN_SIGNATURE_REQUIRED);
                     return false;
                 }
+                
+                const adminData = window.adminPad.toDataURL('image/png');
+                adminInput.value = adminData;
+                console.log('Administrator signature captured:', adminData.length, 'chars');
 
                 // Verify data was set
                 if (!operatorInput.value || operatorInput.value.length === 0) {
@@ -205,6 +222,8 @@
                 }
 
                 console.log('Signatures captured successfully, submitting form...');
+                console.log('Operator input value length:', operatorInput.value.length);
+                console.log('Admin input value length:', adminInput.value.length);
                 // Allow form to submit normally
             });
         });
@@ -235,7 +254,7 @@
         {% trans "Type" %}: {{ machine.type }} | {% trans "Brand" %}: {{ machine.brand }} {{ machine.model }}
     </p>
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" id="usage-report-form">
         {% csrf_token %}
 
         <h2>{% trans "Operator & usage" %}</h2>
