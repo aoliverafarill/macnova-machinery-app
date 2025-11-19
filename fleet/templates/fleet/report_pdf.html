@@ -402,11 +402,11 @@
         
         <div class="map-container">
             {% if map_image_base64 %}
-                <img src="data:image/png;base64,{{ map_image_base64 }}" alt="Report Location Map">
+                <img src="data:image/png;base64,{{ map_image_base64 }}" alt="Report Location Map" style="max-width: 100%; height: auto;">
             {% else %}
-                <div class="map-placeholder">
+                <div class="map-placeholder" style="padding: 2rem; background: #f3f4f6; border-radius: 4px; text-align: center; color: #6b7280;">
                     Map location: {{ report.latitude }}, {{ report.longitude }}<br>
-                    (Map image could not be loaded)
+                    (Map image could not be loaded - placeholder map should appear above)
                 </div>
             {% endif %}
         </div>

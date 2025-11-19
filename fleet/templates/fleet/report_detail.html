@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <title>Usage Report - {{ report.machine.code }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -293,7 +291,29 @@
             <div class="kv-key">Longitude</div>
             <div class="kv-val">{{ report.longitude }}</div>
         </div>
-        <div class="map-container" id="map"></div>
+        <div class="map-container">
+            <!-- Simple iframe embed from OpenStreetMap - more reliable than JavaScript -->
+            {% if map_bbox %}
+            <iframe 
+                width="100%" 
+                height="400" 
+                frameborder="0" 
+                scrolling="no" 
+                marginheight="0" 
+                marginwidth="0"
+                src="https://www.openstreetmap.org/export/embed.html?bbox={{ map_bbox.min_lon }},{{ map_bbox.min_lat }},{{ map_bbox.max_lon }},{{ map_bbox.max_lat }}&layer=mapnik&marker={{ report.latitude }},{{ report.longitude }}"
+                style="border: 1px solid #e5e7eb; border-radius: 8px;">
+            </iframe>
+            {% else %}
+            <div style="padding: 2rem; text-align: center; color: #6b7280;">
+                Map unavailable - coordinates: {{ report.latitude }}, {{ report.longitude }}
+            </div>
+            {% endif %}
+            <br/>
+            <small>
+                <a href="https://www.openstreetmap.org/?mlat={{ report.latitude }}&mlon={{ report.longitude }}&zoom=15" target="_blank">View Larger Map</a>
+            </small>
+        </div>
     </div>
     {% endif %}
 
@@ -388,57 +408,6 @@
     </div>
 </div>
 
-{% if has_location %}
-<script>
-    // Wait for Leaflet to be loaded and DOM to be ready
-    document.addEventListener('DOMContentLoaded', function() {
-        // Double check Leaflet is available
-        if (typeof L === 'undefined') {
-            console.error('Leaflet library not loaded');
-            return;
-        }
-        
-        // Get map container
-        const mapContainer = document.getElementById('map');
-        if (!mapContainer) {
-            console.error('Map container not found');
-            return;
-        }
-        
-        // Ensure container has dimensions
-        if (mapContainer.offsetHeight === 0) {
-            console.warn('Map container has no height, setting explicit height');
-            mapContainer.style.height = '400px';
-        }
-        
-        try {
-            // Initialize map
-            var map = L.map('map').setView([{{ report.latitude }}, {{ report.longitude }}], 15);
-            
-            // Add tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19
-            }).addTo(map);
-            
-            // Add marker
-            L.marker([{{ report.latitude }}, {{ report.longitude }}])
-                .addTo(map)
-                .bindPopup('Report Location')
-                .openPopup();
-            
-            // Invalidate size after a short delay to ensure proper rendering
-            setTimeout(function() {
-                map.invalidateSize();
-            }, 100);
-            
-            console.log('Map initialized successfully');
-        } catch (error) {
-            console.error('Error initializing map:', error);
-        }
-    });
-</script>
-{% endif %}
 </body>
 </html>
 

@@ -433,11 +433,25 @@ def report_detail(request, report_id):
         "item__display_order", "item__label"
     )
 
+    # Calculate map bbox for iframe embed
+    map_bbox = None
+    if report.latitude is not None and report.longitude is not None:
+        # Create a small bounding box around the location
+        lat = float(report.latitude)
+        lon = float(report.longitude)
+        map_bbox = {
+            'min_lon': lon - 0.01,
+            'min_lat': lat - 0.01,
+            'max_lon': lon + 0.01,
+            'max_lat': lat + 0.01,
+        }
+    
     context = {
         "report": report,
         "photos": photos,
         "checklist_entries": checklist_entries,
         "has_location": report.latitude is not None and report.longitude is not None,
+        "map_bbox": map_bbox,
     }
     return render(request, "fleet/report_detail.html", context)
 
