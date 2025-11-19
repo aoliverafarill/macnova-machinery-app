@@ -2,10 +2,26 @@ from django.db import models
 from django.conf import settings
 import uuid
 
-# Function to get storage at runtime (called when field is accessed)
-def get_storage():
-    from django.core.files.storage import default_storage
-    return default_storage
+# Get storage class from settings and instantiate it lazily
+def _get_storage():
+    """Get storage backend from settings - ensures it's loaded after settings are configured."""
+    storage_class_path = getattr(settings, 'DEFAULT_FILE_STORAGE', 'django.core.files.storage.FileSystemStorage')
+    
+    # Import the storage class
+    if '.' in storage_class_path:
+        module_path, class_name = storage_class_path.rsplit('.', 1)
+        module = __import__(module_path, fromlist=[class_name])
+        storage_class = getattr(module, class_name)
+    else:
+        from django.core.files.storage import FileSystemStorage
+        storage_class = FileSystemStorage
+    
+    # Instantiate it
+    return storage_class()
+
+# Create a lazy storage instance that will be evaluated when first accessed
+from django.utils.functional import SimpleLazyObject
+storage = SimpleLazyObject(_get_storage)
 
 
 class JobSite(models.Model):
@@ -222,7 +238,7 @@ class UsagePhoto(models.Model):
     )
     image = models.ImageField(
         upload_to="usage_photos/",
-        storage=get_storage  # Pass callable - Django will call it at runtime
+        storage=storage  # Use lazy storage object
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
