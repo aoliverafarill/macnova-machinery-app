@@ -22,6 +22,8 @@ class PublicMediaStorage(S3Boto3Storage):
         """Initialize and log configuration."""
         super().__init__(*args, **kwargs)
         print(f"[S3 INIT] Storage initialized - Bucket: {self.bucket_name}, ACL: {self.default_acl}", file=sys.stderr, flush=True)
+        print(f"[S3 INIT] AWS_ACCESS_KEY_ID: {settings.AWS_ACCESS_KEY_ID[:10]}...", file=sys.stderr, flush=True)
+        print(f"[S3 INIT] AWS_SECRET_ACCESS_KEY length: {len(settings.AWS_SECRET_ACCESS_KEY)}", file=sys.stderr, flush=True)
     
     def _save(self, name, content):
         """

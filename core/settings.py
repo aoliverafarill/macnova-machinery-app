@@ -18,10 +18,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-SECRET_KEY = os.environ.get(
+# Handle SECRET_KEY with or without quotes
+_secret_key = os.environ.get(
     "DJANGO_SECRET_KEY",
     "dev-secret-key-change-me"  # fallback for local dev
 )
+# Remove quotes if present
+if _secret_key.startswith('"') and _secret_key.endswith('"'):
+    _secret_key = _secret_key[1:-1]
+elif _secret_key.startswith("'") and _secret_key.endswith("'"):
+    _secret_key = _secret_key[1:-1]
+SECRET_KEY = _secret_key
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
