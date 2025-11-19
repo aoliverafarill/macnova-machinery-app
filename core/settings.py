@@ -153,10 +153,11 @@ if USE_S3:
 
     # IMPORTANT: Your bucket uses ACLs → use this!
     AWS_DEFAULT_ACL = "public-read"
-
+    AWS_S3_OBJECT_PARAMETERS = {"ACL": AWS_DEFAULT_ACL}
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_FILE_OVERWRITE = False
     AWS_S3_ADDRESSING_STYLE = "virtual"
+
 
     AWS_S3_CUSTOM_DOMAIN = (
         f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
