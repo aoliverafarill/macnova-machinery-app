@@ -188,5 +188,20 @@ LOGGING = {
             "level": "ERROR",
             "propagate": False,
         },
+        "storages": {
+            "handlers": ["console"],
+            "level": "DEBUG",  # Log S3 storage operations
+            "propagate": False,
+        },
+        "boto3": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "botocore": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
     },
 }
