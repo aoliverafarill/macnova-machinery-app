@@ -11,6 +11,9 @@
         /* Define running element for signatures/footer */
         .signature-footer-container {
             position: running(signature-footer);
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
         
         /* Place running element at bottom of page */
@@ -283,16 +286,27 @@
         /* Signature/footer container for running element */
         .signature-footer-container {
             page-break-inside: avoid;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         .signatures-card {
             page-break-inside: avoid;
             margin-bottom: 0;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .footer-card {
             page-break-inside: avoid;
             page-break-before: avoid;
             margin-top: 0;
             margin-bottom: 0;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
     </style>
 </head>
