@@ -444,24 +444,28 @@ def report_pdf(request, report_id):
     # Generate static map image as base64 if location exists
     map_image_base64 = None
     if report.latitude is not None and report.longitude is not None:
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
             # Try multiple map services for reliability
             map_services = [
-                # OpenStreetMap static map
-                f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude},red",
-                # Alternative: Nominatim-based static map
-                f"https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-s+ff0000({report.longitude},{report.latitude})/{report.longitude},{report.latitude},15,0/600x400@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw",
+                # OpenStreetMap static map (simpler URL format)
+                f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}",
+                # Alternative: OpenStreetMap with different format
+                f"https://www.openstreetmap.org/export/embed.html?bbox={report.longitude-0.01},{report.latitude-0.01},{report.longitude+0.01},{report.latitude+0.01}&layer=mapnik&marker={report.latitude},{report.longitude}",
             ]
             
-            for map_url in map_services:
+            for i, map_url in enumerate(map_services):
                 try:
                     req = urllib.request.Request(map_url)
-                    req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
+                    req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
                     with urllib.request.urlopen(req, timeout=10) as response:
+                        content_type = response.headers.get('Content-Type', '')
                         map_image_data = response.read()
                         
                         # Verify it's actually an image
-                        if len(map_image_data) > 0:
+                        if len(map_image_data) > 100 and ('image' in content_type or map_url.endswith('.php')):
                             # Process image with PIL to ensure it's in the right format
                             try:
                                 img = Image.open(BytesIO(map_image_data))
@@ -478,14 +482,19 @@ def report_pdf(request, report_id):
                                 img.save(img_io, format='PNG')
                                 img_io.seek(0)
                                 map_image_data = img_io.read()
-                            except Exception:
-                                # If PIL processing fails, use original data
-                                pass
-                            
-                            # Convert to base64 for embedding in PDF
-                            map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
-                            break
-                except Exception:
+                                
+                                # Convert to base64 for embedding in PDF
+                                map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
+                                logger.info(f"Successfully downloaded map image (service {i+1})")
+                                break
+                            except Exception as img_error:
+                                logger.warning(f"PIL processing failed for map: {img_error}")
+                                # If PIL processing fails, try using original data if it looks like an image
+                                if map_image_data[:4] in [b'\x89PNG', b'\xff\xd8\xff', b'GIF8']:
+                                    map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
+                                    break
+                except Exception as url_error:
+                    logger.warning(f"Failed to download map from service {i+1}: {url_error}")
                     continue
                     
         except Exception as e:

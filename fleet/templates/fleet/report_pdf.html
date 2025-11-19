@@ -176,8 +176,15 @@
             background: #e0f2fe;
             color: #0369a1;
         }
-        .signatures-wrapper {
-            page-break-before: auto;
+        .bottom-section-wrapper {
+            page-break-inside: avoid;
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .spacer {
+            flex-grow: 1;
+            min-height: 200px;
         }
         .signatures {
             display: grid;
@@ -242,10 +249,6 @@
             color: #374151;
             line-height: 1.6;
         }
-        .footer-wrapper {
-            page-break-before: auto;
-            margin-top: auto;
-        }
         .footer {
             margin-top: 16px;
             padding-top: 12px;
@@ -264,16 +267,26 @@
             font-size: 10px;
             font-weight: 600;
         }
-        /* Ensure signatures and footer stay together at bottom */
+        /* Spacer to push signatures/footer to bottom */
+        .bottom-spacer {
+            min-height: 300px;
+            page-break-inside: avoid;
+        }
+        /* Ensure signatures and footer stay together as one block */
         .signatures-card {
             page-break-inside: avoid;
-            page-break-before: always;
             margin-top: 0;
+            margin-bottom: 0;
         }
         .footer-card {
             page-break-inside: avoid;
             page-break-before: avoid;
             margin-top: 0;
+            margin-bottom: 0;
+        }
+        /* Keep signatures and footer together */
+        .signatures-card + .footer-card {
+            page-break-before: avoid;
         }
     </style>
 </head>
@@ -436,7 +449,10 @@
     </div>
     {% endif %}
 
-    <!-- Signatures - Locked at bottom -->
+    <!-- Spacer to push signatures/footer to bottom -->
+    <div class="bottom-spacer"></div>
+
+    <!-- Signatures and Footer - Treated as one block at bottom -->
     <div class="card signatures-card">
         <div class="section-title">Signatures</div>
         <div class="signatures">
@@ -460,7 +476,7 @@
         </div>
     </div>
 
-    <!-- Footer - Locked at bottom -->
+    <!-- Footer - Part of same block as signatures -->
     <div class="card footer-card">
         <div class="footer">
             Report ID: {{ report.id }} • Generated {{ report.created_at|date:"F d, Y" }} • Macnova Machinery
