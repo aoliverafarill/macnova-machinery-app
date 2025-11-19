@@ -556,45 +556,84 @@ def report_pdf(request, report_id):
                     logger.warning(f"Failed to download map from service {i+1}: {url_error}")
                     continue
             
-            # If all services failed, generate a simple placeholder map
+            # If all services failed, generate a more realistic placeholder map
             if not map_downloaded:
-                logger.info("All map services failed, generating placeholder map")
+                logger.info("All map services failed, generating enhanced placeholder map")
                 try:
                     from PIL import ImageDraw, ImageFont
                     
-                    # Create a simple map placeholder
-                    img = Image.new('RGB', (600, 400), color=(240, 240, 240))
+                    # Create a map-like background with grid
+                    img = Image.new('RGB', (600, 400), color=(245, 245, 245))
                     draw = ImageDraw.Draw(img)
                     
                     # Draw border
-                    draw.rectangle([(0, 0), (599, 399)], outline=(200, 200, 200), width=2)
+                    draw.rectangle([(0, 0), (599, 399)], outline=(180, 180, 180), width=3)
                     
-                    # Draw a simple marker
+                    # Draw subtle grid lines to make it look more like a map
+                    for i in range(0, 600, 50):
+                        draw.line([(i, 0), (i, 400)], fill=(230, 230, 230), width=1)
+                    for i in range(0, 400, 50):
+                        draw.line([(0, i), (600, i)], fill=(230, 230, 230), width=1)
+                    
+                    # Draw a more realistic map marker (red pin)
                     center_x, center_y = 300, 200
-                    # Draw marker circle
-                    draw.ellipse([center_x-10, center_y-10, center_x+10, center_y+10], 
-                                fill=(255, 0, 0), outline=(200, 0, 0), width=2)
-                    # Draw marker pointer
-                    draw.polygon([(center_x, center_y+10), (center_x-5, center_y+20), (center_x+5, center_y+20)],
-                                fill=(255, 0, 0), outline=(200, 0, 0))
                     
-                    # Add coordinates text
+                    # Draw marker shadow
+                    shadow_offset = 2
+                    draw.ellipse([center_x-8+shadow_offset, center_y-8+shadow_offset, center_x+8+shadow_offset, center_y+8+shadow_offset], 
+                                fill=(100, 100, 100, 100))
+                    draw.polygon([(center_x+shadow_offset, center_y+8+shadow_offset), 
+                                 (center_x-6+shadow_offset, center_y+18+shadow_offset), 
+                                 (center_x+6+shadow_offset, center_y+18+shadow_offset)],
+                                fill=(100, 100, 100, 100))
+                    
+                    # Draw main marker circle (red)
+                    draw.ellipse([center_x-12, center_y-12, center_x+12, center_y+12], 
+                                fill=(220, 38, 38), outline=(180, 20, 20), width=2)
+                    # White center dot
+                    draw.ellipse([center_x-4, center_y-4, center_x+4, center_y+4], 
+                                fill=(255, 255, 255))
+                    
+                    # Draw marker pointer (red teardrop shape)
+                    # Top part (circle already drawn)
+                    # Bottom pointer
+                    pointer_points = [
+                        (center_x, center_y+12),
+                        (center_x-8, center_y+28),
+                        (center_x+8, center_y+28)
+                    ]
+                    draw.polygon(pointer_points, fill=(220, 38, 38), outline=(180, 20, 20))
+                    # Pointer outline
+                    draw.line([(center_x, center_y+12), (center_x-8, center_y+28)], fill=(180, 20, 20), width=2)
+                    draw.line([(center_x, center_y+12), (center_x+8, center_y+28)], fill=(180, 20, 20), width=2)
+                    draw.line([(center_x-8, center_y+28), (center_x+8, center_y+28)], fill=(180, 20, 20), width=2)
+                    
+                    # Add title
                     try:
-                        # Try to use a default font
                         font = ImageFont.load_default()
                     except:
                         font = None
                     
-                    coord_text = f"Location: {report.latitude:.6f}, {report.longitude:.6f}"
-                    # Get text size
+                    title_text = "Report Location"
+                    coord_text = f"{report.latitude:.6f}, {report.longitude:.6f}"
+                    
+                    # Draw title
+                    if font:
+                        bbox = draw.textbbox((0, 0), title_text, font=font)
+                        title_width = bbox[2] - bbox[0]
+                    else:
+                        title_width = len(title_text) * 7
+                    title_x = (600 - title_width) // 2
+                    draw.text((title_x, 20), title_text, fill=(60, 60, 60), font=font)
+                    
+                    # Draw coordinates
                     if font:
                         bbox = draw.textbbox((0, 0), coord_text, font=font)
-                        text_width = bbox[2] - bbox[0]
+                        coord_width = bbox[2] - bbox[0]
                     else:
-                        text_width = len(coord_text) * 6  # Approximate
-                    
-                    text_x = (600 - text_width) // 2
-                    draw.text((text_x, 350), coord_text, fill=(100, 100, 100), font=font)
+                        coord_width = len(coord_text) * 6
+                    coord_x = (600 - coord_width) // 2
+                    draw.text((coord_x, 360), coord_text, fill=(100, 100, 100), font=font)
                     
                     # Convert to base64
                     img_io = BytesIO()
@@ -602,7 +641,7 @@ def report_pdf(request, report_id):
                     img_io.seek(0)
                     map_image_data = img_io.read()
                     map_image_base64 = base64.b64encode(map_image_data).decode('utf-8')
-                    logger.info("Generated placeholder map successfully")
+                    logger.info("Generated enhanced placeholder map successfully")
                 except Exception as placeholder_error:
                     logger.warning(f"Failed to generate placeholder map: {placeholder_error}")
                     
