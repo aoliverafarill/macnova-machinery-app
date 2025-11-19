@@ -5,7 +5,7 @@
     <style>
         @page {
             size: A4;
-            margin: 15mm 18mm 60mm 18mm; /* Extra bottom margin for signatures/footer */
+            margin: 20mm 20mm 70mm 20mm; /* Increased margins for easier printing, extra bottom for signatures */
         }
         
         /* Define running element for signatures/footer */
@@ -16,11 +16,12 @@
             padding: 0;
         }
         
-        /* Place running element at bottom of page */
+        /* Place running element at bottom of page with some margin from edge */
         @page {
             @bottom-center {
                 content: element(signature-footer);
                 vertical-align: bottom;
+                margin-bottom: 10mm; /* Add margin from bottom edge */
             }
         }
         body {
@@ -31,7 +32,7 @@
             color: #111827;
             margin: 0;
             padding: 0;
-            background: #f3f4f6;
+            background: #ffffff; /* White background instead of gray */
         }
         .card {
             background: #ffffff;
