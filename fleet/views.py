@@ -493,9 +493,11 @@ def report_pdf(request, report_id):
         
         try:
             # Try to download map from external service
-            # If that fails, generate a simple placeholder map
+            # Try multiple services for reliability
             map_services = [
-                # Try OSM static services (may fail due to DNS issues)
+                # Google Maps Static API (may require API key, but try first)
+                f"https://maps.googleapis.com/maps/api/staticmap?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers=color:red|{report.latitude},{report.longitude}&maptype=roadmap",
+                # Try OSM static services as fallback
                 f"https://staticmap.openstreetmap.org/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}",
                 f"https://staticmap.openstreetmap.de/staticmap.php?center={report.latitude},{report.longitude}&zoom=15&size=600x400&markers={report.latitude},{report.longitude}",
             ]

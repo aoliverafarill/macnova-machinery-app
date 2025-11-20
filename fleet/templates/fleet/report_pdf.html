@@ -404,9 +404,15 @@
             {% if map_image_base64 %}
                 <img src="data:image/png;base64,{{ map_image_base64 }}" alt="Report Location Map" style="max-width: 100%; height: auto;">
             {% else %}
-                <div class="map-placeholder" style="padding: 2rem; background: #f3f4f6; border-radius: 4px; text-align: center; color: #6b7280;">
+                <!-- Try to embed Google Maps static image directly in HTML -->
+                <img src="https://maps.googleapis.com/maps/api/staticmap?center={{ report.latitude }},{{ report.longitude }}&zoom=15&size=600x400&markers=color:red|{{ report.latitude }},{{ report.longitude }}&maptype=roadmap" 
+                     alt="Report Location Map"
+                     style="max-width: 100%; height: auto;"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <!-- Fallback placeholder if image fails -->
+                <div class="map-placeholder" style="padding: 2rem; background: #f3f4f6; border-radius: 4px; text-align: center; color: #6b7280; display: none;">
                     Map location: {{ report.latitude }}, {{ report.longitude }}<br>
-                    (Map image could not be loaded - placeholder map should appear above)
+                    (Map image could not be loaded)
                 </div>
             {% endif %}
         </div>
