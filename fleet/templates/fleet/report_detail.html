@@ -294,13 +294,13 @@
         <div class="map-container">
             <!-- Use Google Maps embed - works without API key for basic usage -->
             {% if has_location %}
-            <!-- Use Google Maps embed with coordinates -->
+            <!-- Use Google Maps embed with explicit marker and zoom -->
             <iframe 
                 width="100%" 
                 height="400" 
                 frameborder="0" 
                 style="border: 1px solid #e5e7eb; border-radius: 8px;"
-                src="https://maps.google.com/maps?q={{ report.latitude }},{{ report.longitude }}&hl=en&z=15&output=embed"
+                src="https://www.google.com/maps?q={{ report.latitude }},{{ report.longitude }}&ll={{ report.latitude }},{{ report.longitude }}&z=18&t=m&output=embed"
                 allowfullscreen>
             </iframe>
             <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 4px; font-size: 0.75rem; color: #0c4a6e;">

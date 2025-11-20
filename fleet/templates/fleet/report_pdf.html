@@ -238,24 +238,6 @@
             margin-bottom: 8px;
             text-align: center;
         }
-        .map-container {
-            margin-top: 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            overflow: hidden;
-            background: #f9fafb;
-        }
-        .map-container img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        .map-placeholder {
-            padding: 40px;
-            text-align: center;
-            color: #9ca3af;
-            font-size: 11px;
-        }
         .notes-box {
             background: #f0f9ff;
             border-left: 4px solid #3b82f6;
@@ -389,7 +371,7 @@
     </div>
 
     {% if has_location %}
-    <!-- Location -->
+    <!-- Location (coordinates only - map removed from PDF) -->
     <div class="card">
         <div class="section-title">Location</div>
         <div class="kv-grid">
@@ -399,22 +381,8 @@
             <div class="kv-key">Longitude</div>
             <div class="kv-val">{{ report.longitude }}</div>
         </div>
-        
-        <div class="map-container">
-            {% if map_image_base64 %}
-                <img src="data:image/png;base64,{{ map_image_base64 }}" alt="Report Location Map" style="max-width: 100%; height: auto;">
-            {% else %}
-                <!-- Try to embed Google Maps static image directly in HTML -->
-                <img src="https://maps.googleapis.com/maps/api/staticmap?center={{ report.latitude }},{{ report.longitude }}&zoom=15&size=600x400&markers=color:red|{{ report.latitude }},{{ report.longitude }}&maptype=roadmap" 
-                     alt="Report Location Map"
-                     style="max-width: 100%; height: auto;"
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <!-- Fallback placeholder if image fails -->
-                <div class="map-placeholder" style="padding: 2rem; background: #f3f4f6; border-radius: 4px; text-align: center; color: #6b7280; display: none;">
-                    Map location: {{ report.latitude }}, {{ report.longitude }}<br>
-                    (Map image could not be loaded)
-                </div>
-            {% endif %}
+        <div style="margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 4px; font-size: 0.75rem; color: #6b7280;">
+            <strong>Note:</strong> View the web report to see the map with location marker.
         </div>
     </div>
     {% endif %}
