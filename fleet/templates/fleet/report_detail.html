@@ -142,7 +142,7 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
-        .status-OK {
+        .status-NO_ISSUE {
             background: #dcfce7;
             color: #166534;
         }
@@ -251,13 +251,10 @@
     <div class="card">
         <div class="section-title">Engine Hours & Fuel</div>
         <div class="kv-grid">
-            <div class="kv-key">Engine Hours (Start)</div>
-            <div class="kv-val">{{ report.engine_hours_start }}</div>
+            <div class="kv-key">Engine Hours</div>
+            <div class="kv-val">{{ report.engine_hours }}</div>
             
-            <div class="kv-key">Engine Hours (End)</div>
-            <div class="kv-val">{{ report.engine_hours_end }}</div>
-            
-            <div class="kv-key">Hours Used</div>
+            <div class="kv-key">Hours Used (since last report)</div>
             <div class="kv-val"><strong>{{ report.hours_used|default:"-" }}</strong></div>
             
             <div class="kv-key">Fuel Level (Start)</div>

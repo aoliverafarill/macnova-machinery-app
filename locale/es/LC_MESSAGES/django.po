@@ -142,6 +142,18 @@ msgstr "Problema"
 msgid "N/A"
 msgstr "N/A"
 
+#: fleet/templates/fleet/machine_usage_form.html:496
+msgid "Mark each item as There is an issue, No issue, or N/A."
+msgstr "Marque cada elemento como Hay un problema, No hay problema, o N/A."
+
+#: fleet/templates/fleet/machine_usage_form.html:505
+msgid "No issue"
+msgstr "No hay problema"
+
+#: fleet/templates/fleet/machine_usage_form.html:508
+msgid "There is an issue"
+msgstr "Hay un problema"
+
 #: fleet/templates/fleet/machine_usage_form.html:292
 msgid "Comment if there is an issue (optional)"
 msgstr "Comentario si hay un problema (opcional)"
@@ -149,10 +161,6 @@ msgstr "Comentario si hay un problema (opcional)"
 #: fleet/templates/fleet/machine_usage_form.html:297
 msgid "No checklist items defined yet."
 msgstr "Aún no se han definido elementos de la lista de verificación."
-
-#: fleet/templates/fleet/machine_usage_form.html:300
-msgid "Signatures"
-msgstr ""
 
 #: fleet/templates/fleet/machine_usage_form.html:241
 msgid "Signatures"

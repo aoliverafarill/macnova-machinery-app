@@ -139,6 +139,16 @@
             color: #6b7280;
             margin-top: 0.25rem;
         }
+        .warning-flag {
+            display: inline-block;
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -204,6 +214,9 @@
         <div class="card">
             <h2>Total hours used</h2>
             <div class="value">{{ total_hours|default:"0" }}</div>
+            {% if total_hours < 0 %}
+                <div class="note" style="color: #dc2626; font-weight: 600;">⚠️ Negative hours detected - check reports</div>
+            {% endif %}
         </div>
         <div class="card">
             <h2>Machines used</h2>
@@ -219,13 +232,13 @@
                 <th>Machine</th>
                 <th>Status</th>
                 <th>Reports</th>
-                <th>Total hours</th>
+                <th>Total hours used</th>
                 <th>Last usage</th>
             </tr>
             </thead>
             <tbody>
             {% for row in per_machine %}
-                <tr>
+                <tr {% if row.total_hours < 0 %}style="background-color: #fef2f2;"{% endif %}>
                     <td>{{ row.machine__code }} - {{ row.machine__name }}</td>
                     <td>
                         <span class="status-pill status-{{ row.machine__status }}">
@@ -233,8 +246,14 @@
                         </span>
                     </td>
                     <td>{{ row.report_count }}</td>
-                    <td>{{ row.total_hours|default:"0" }}</td>
-                    <td>{{ row.last_usage }}</td>
+                    <td>
+                        {% if row.total_hours < 0 %}
+                            <span style="color: #dc2626; font-weight: 600;">⚠️ {{ row.total_hours }}</span>
+                        {% else %}
+                            {{ row.total_hours|default:"0" }}
+                        {% endif %}
+                    </td>
+                    <td>{{ row.last_usage|date:"M d, Y"|default:"-" }}</td>
                 </tr>
             {% empty %}
                 <tr>
@@ -255,14 +274,14 @@
                 <th>Operator</th>
                 <th>Job site</th>
                 <th>Engine hours</th>
-                <th>Hours used</th>
+                <th>Last session use hours</th>
                 <th>Photos</th>
                 <th>Actions</th>
             </tr>
             </thead>
             <tbody>
                 {% for r in recent_reports %}
-                    <tr>
+                    <tr {% if r.hours_used is not None and r.hours_used < 0 %}style="background-color: #fef2f2;"{% endif %}>
                         <td>{{ r.date }}</td>
                         <td>
                             <a href="{% url 'fleet:report_detail' r.id %}" style="color: #111827; text-decoration: none; font-weight: 500;">
@@ -277,8 +296,18 @@
                                 -
                             {% endif %}
                         </td>
-                        <td>{{ r.engine_hours_start }} → {{ r.engine_hours_end }}</td>
-                        <td>{{ r.hours_used }}</td>
+                        <td>{{ r.engine_hours }}</td>
+                        <td>
+                            {% if r.hours_used is not None %}
+                                {% if r.hours_used < 0 %}
+                                    <span style="color: #dc2626; font-weight: 600;">⚠️ {{ r.hours_used }}</span>
+                                {% else %}
+                                    {{ r.hours_used }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>
                             {% for photo in r.photos.all|slice:":3" %}
                                 <a href="{{ photo.image.url }}" target="_blank">

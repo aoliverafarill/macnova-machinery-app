@@ -135,16 +135,11 @@ class UsageReport(models.Model):
         help_text="When the operator used the machine",
     )
 
-    # Engine hours
-    engine_hours_start = models.DecimalField(
+    # Engine hours (current reading at time of report)
+    engine_hours = models.DecimalField(
         max_digits=8,
         decimal_places=2,
-        help_text="Hour meter before use",
-    )
-    engine_hours_end = models.DecimalField(
-        max_digits=8,
-        decimal_places=2,
-        help_text="Hour meter after use",
+        help_text="Current hour meter reading at time of report",
     )
 
     # Fuel level (0-100%)
@@ -218,9 +213,27 @@ class UsageReport(models.Model):
 
     @property
     def hours_used(self):
+        """
+        Calculate hours used by comparing with the previous report for the same machine.
+        Returns None if no previous report exists.
+        """
         try:
-            return float(self.engine_hours_end) - float(self.engine_hours_start)
-        except (TypeError, ValueError):
+            # Get the previous report for this machine (ordered by date, then created_at)
+            previous_report = (
+                UsageReport.objects
+                .filter(machine=self.machine)
+                .filter(
+                    models.Q(date__lt=self.date) |
+                    (models.Q(date=self.date) & models.Q(created_at__lt=self.created_at))
+                )
+                .order_by('-date', '-created_at')
+                .first()
+            )
+            
+            if previous_report and previous_report.engine_hours:
+                return float(self.engine_hours) - float(previous_report.engine_hours)
+            return None
+        except (TypeError, ValueError, AttributeError):
             return None
 
 
@@ -310,14 +323,14 @@ class ChecklistEntry(models.Model):
     Stores the answer to one ChecklistItem for a specific UsageReport.
     """
 
-    VALUE_OK = "OK"
     VALUE_ISSUE = "ISSUE"
+    VALUE_NO_ISSUE = "NO_ISSUE"
     VALUE_NA = "NA"
 
     VALUE_CHOICES = [
-        (VALUE_OK, "OK"),
-        (VALUE_ISSUE, "Issue"),
-        (VALUE_NA, "Not applicable"),
+        (VALUE_ISSUE, "There is an issue"),
+        (VALUE_NO_ISSUE, "No issue"),
+        (VALUE_NA, "N/A"),
     ]
 
     usage_report = models.ForeignKey(
@@ -333,7 +346,7 @@ class ChecklistEntry(models.Model):
     value = models.CharField(
         max_length=10,
         choices=VALUE_CHOICES,
-        default=VALUE_OK,
+        default=VALUE_NO_ISSUE,
     )
     comment = models.TextField(
         blank=True,
