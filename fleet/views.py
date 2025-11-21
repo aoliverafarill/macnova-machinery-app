@@ -1,5 +1,6 @@
 import csv
 import base64
+from collections import defaultdict
 from decimal import Decimal
 from io import BytesIO
 from PIL import Image
@@ -39,9 +40,16 @@ def machine_usage_view(request, qr_slug):
     """
     from django.utils import translation
     
-    # Activate Spanish by default if no language is set
-    if not translation.get_language():
+    # Force Spanish as default language - critical for operators who don't speak English
+    # The middleware handles this, but we ensure it here as well
+    current_lang = translation.get_language()
+    if not current_lang or current_lang not in ['es', 'en']:
         translation.activate('es')
+    # Check session for explicit language preference
+    session_lang = request.session.get('django_language')
+    if not session_lang or session_lang not in ['es', 'en']:
+        translation.activate('es')
+        request.session['django_language'] = 'es'
     
     machine = get_object_or_404(Machine, qr_slug=qr_slug, is_active=True)
 
@@ -53,8 +61,7 @@ def machine_usage_view(request, qr_slug):
     if request.method == "POST":
         # ---- 1. Basic fields ----
         operator_name = (request.POST.get("operator_name") or "").strip()
-        engine_hours_start_raw = request.POST.get("engine_hours_start")
-        engine_hours_end_raw = request.POST.get("engine_hours_end")
+        engine_hours_raw = request.POST.get("engine_hours")
         fuel_level_start_raw = request.POST.get("fuel_level_start")
         fuel_level_end_raw = request.POST.get("fuel_level_end")
         job_site_id = request.POST.get("job_site")
@@ -79,8 +86,7 @@ def machine_usage_view(request, qr_slug):
             except Exception:
                 return None
 
-        engine_hours_start = to_decimal(engine_hours_start_raw)
-        engine_hours_end = to_decimal(engine_hours_end_raw)
+        engine_hours = to_decimal(engine_hours_raw)
         fuel_level_start = to_int(fuel_level_start_raw)
         fuel_level_end = to_int(fuel_level_end_raw)
         latitude = to_decimal(latitude_raw)
@@ -172,8 +178,7 @@ def machine_usage_view(request, qr_slug):
             machine=machine,
             operator_name=operator_name or "Unknown",
             date=timezone.now(),  # later you could pass an explicit datetime
-            engine_hours_start=engine_hours_start or Decimal("0"),
-            engine_hours_end=engine_hours_end or Decimal("0"),
+            engine_hours=engine_hours or Decimal("0"),
             fuel_level_start=fuel_level_start,
             fuel_level_end=fuel_level_end,
             job_site=job_site,
@@ -218,7 +223,7 @@ def machine_usage_view(request, qr_slug):
 
         # ---- 5. Create ChecklistEntries ----
         for item in checklist_items:
-            value = request.POST.get(f"check_{item.id}", ChecklistEntry.VALUE_OK)
+            value = request.POST.get(f"check_{item.id}", ChecklistEntry.VALUE_NO_ISSUE)
             comment = (request.POST.get(f"check_comment_{item.id}") or "").strip()
             ChecklistEntry.objects.create(
                 usage_report=usage_report,
@@ -280,36 +285,52 @@ def manager_dashboard(request):
         reports = reports.filter(job_site_id=job_site_id)
 
     # Expression to compute hours_used at DB level
-    hours_used_expr = ExpressionWrapper(
-        F("engine_hours_end") - F("engine_hours_start"),
-        output_field=DecimalField(max_digits=8, decimal_places=2),
-    )
-
-    reports = reports.annotate(hours_used_db=hours_used_expr)
+    # Hours used calculation is now done via the property method in the model
+    # which compares with previous report. For dashboard, we'll calculate it in Python
+    # since it requires comparing consecutive reports per machine.
 
     # ---- Global stats ----
     total_reports = reports.count()
-    agg = reports.aggregate(total_hours=Sum("hours_used_db"))
-    total_hours = agg["total_hours"] or Decimal("0")
+    # Calculate total hours by summing hours_used from each report's property
+    total_hours = Decimal("0")
+    for report in reports:
+        hours = report.hours_used
+        if hours is not None:
+            total_hours += Decimal(str(hours))
     machines_used = (
         reports.values("machine_id").distinct().count() if total_reports > 0 else 0
     )
 
     # ---- Per-machine summary ----
-    per_machine = (
-        reports.values(
-            "machine_id",
-            "machine__code",
-            "machine__name",
-            "machine__status",
-        )
-        .annotate(
-            total_hours=Sum("hours_used_db"),
-            report_count=Count("id"),
-            last_usage=Max("date"),
-        )
-        .order_by("machine__code")
-    )
+    # Calculate per-machine stats manually since hours_used is a property
+    machine_stats = defaultdict(lambda: {
+        "machine_id": None,
+        "machine__code": "",
+        "machine__name": "",
+        "machine__status": "",
+        "total_hours": Decimal("0"),
+        "report_count": 0,
+        "last_usage": None,
+    })
+    
+    for report in reports.select_related("machine"):
+        machine_id = report.machine_id
+        if machine_stats[machine_id]["machine_id"] is None:
+            machine_stats[machine_id]["machine_id"] = machine_id
+            machine_stats[machine_id]["machine__code"] = report.machine.code
+            machine_stats[machine_id]["machine__name"] = report.machine.name
+            machine_stats[machine_id]["machine__status"] = report.machine.status
+        
+        machine_stats[machine_id]["report_count"] += 1
+        hours = report.hours_used
+        if hours is not None:
+            machine_stats[machine_id]["total_hours"] += Decimal(str(hours))
+        
+        if (machine_stats[machine_id]["last_usage"] is None or 
+            report.date > machine_stats[machine_id]["last_usage"]):
+            machine_stats[machine_id]["last_usage"] = report.date
+    
+    per_machine = sorted(machine_stats.values(), key=lambda x: x["machine__code"])
 
     # ---- Recent reports ----
     recent_reports = reports.order_by("-date")[:25]
@@ -356,11 +377,8 @@ def manager_dashboard_export_csv(request):
     if job_site_id:
         reports = reports.filter(job_site_id=job_site_id)
 
-    hours_used_expr = ExpressionWrapper(
-        F("engine_hours_end") - F("engine_hours_start"),
-        output_field=DecimalField(max_digits=8, decimal_places=2),
-    )
-    reports = reports.annotate(hours_used_db=hours_used_expr).order_by("date")
+    # Hours used is now calculated via model property (comparing with previous report)
+    reports = reports.order_by("date")
 
     # Build CSV response
     response = HttpResponse(content_type="text/csv")
@@ -400,9 +418,8 @@ def manager_dashboard_export_csv(request):
                 r.operator_name,
                 r.job_site.code if r.job_site else "",
                 r.job_site.name if r.job_site else "",
-                r.engine_hours_start,
-                r.engine_hours_end,
-                getattr(r, "hours_used_db", None),
+                r.engine_hours,
+                r.hours_used,
                 r.fuel_level_start if r.fuel_level_start is not None else "",
                 r.fuel_level_end if r.fuel_level_end is not None else "",
                 r.latitude if r.latitude is not None else "",

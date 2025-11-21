@@ -7,81 +7,243 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             margin: 0;
-            padding: 1rem;
+            padding: 0;
             background: #f3f4f6;
+            color: #111827;
         }
-        .container {
+        .app-container {
             max-width: 600px;
             margin: 0 auto;
             background: #ffffff;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
-        h1, h2 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
+        /* Header with dark blue background */
+        .header {
+            background: #1e40af;
+            color: #ffffff;
+            padding: 1rem 1.25rem;
+            position: relative;
+        }
+        .header-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 0.25rem 0;
+            text-align: center;
+        }
+        .header-subtitle {
+            font-size: 0.85rem;
+            opacity: 0.95;
+            text-align: center;
+            margin: 0;
+        }
+        .language-switcher {
+            position: absolute;
+            top: 1rem;
+            right: 1.25rem;
+        }
+        .language-switcher select {
+            background: rgba(255,255,255,0.2);
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.8rem;
+        }
+        .language-switcher select option {
+            background: #1e40af;
+            color: #ffffff;
+        }
+        /* Form content */
+        .form-content {
+            padding: 1.5rem 1.25rem;
+        }
+        .section {
+            margin-bottom: 2rem;
+        }
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e5e7eb;
         }
         .field {
-            margin-bottom: 0.75rem;
+            margin-bottom: 1.25rem;
         }
-        label {
+        .field label {
             display: block;
             font-size: 0.9rem;
-            margin-bottom: 0.25rem;
-        }
-        input[type="text"],
-        input[type="number"],
-        select,
-        textarea {
-            width: 100%;
-            padding: 0.5rem;
-            border-radius: 4px;
-            border: 1px solid #d1d5db;
-            font-size: 0.9rem;
-        }
-        textarea {
-            min-height: 80px;
-        }
-        .photo-group {
-            margin-top: 0.5rem;
-            font-size: 0.85rem;
+            font-weight: 500;
             color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .field input[type="text"],
+        .field input[type="number"],
+        .field select,
+        .field textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #ffffff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .field input:focus,
+        .field select:focus,
+        .field textarea:focus {
+            outline: none;
+            border-color: #1e40af;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+        .field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .field select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            padding-right: 2.5rem;
+        }
+        /* Photo uploads */
+        .photo-group {
+            margin-bottom: 1rem;
+        }
+        .photo-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            display: block;
         }
         .photo-group input[type="file"] {
             width: 100%;
-            margin-top: 0.25rem;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
         }
-        .btn-primary {
+        /* Checklist */
+        .checklist-item {
+            margin-bottom: 1.25rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .checklist-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+        .checklist-description {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+        }
+        .checklist-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .checklist-options label {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #374151;
+            cursor: pointer;
+        }
+        .checklist-options input[type="radio"] {
+            margin-right: 0.5rem;
+            width: 1.1rem;
+            height: 1.1rem;
+            cursor: pointer;
+        }
+        .checklist-comment {
+            margin-top: 0.75rem;
             width: 100%;
-            padding: 0.75rem;
-            background: #111827;
+            padding: 0.6rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+        /* Signatures */
+        .signature-field {
+            margin-bottom: 1.5rem;
+        }
+        .signature-field label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .signature-canvas-container {
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            background: #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+        .signature-canvas-container canvas {
+            width: 100%;
+            height: 150px;
+            touch-action: none;
+            display: block;
+        }
+        .signature-clear-btn {
+            margin-top: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #6b7280;
             color: #ffffff;
             border: none;
             border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .signature-clear-btn:hover {
+            background: #4b5563;
+        }
+        /* Submit button */
+        .btn-primary {
+            width: 100%;
+            padding: 1rem;
+            background: #1e40af;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
             font-size: 1rem;
             font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 1rem;
+        }
+        .btn-primary:hover {
+            background: #1e3a8a;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
         }
         .note {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: #6b7280;
-        }
-        .checklist-item {
-            margin-bottom: 0.5rem;
-            padding: 0.5rem;
-            background: #f9fafb;
-            border-radius: 4px;
-        }
-        .checklist-label {
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        .checklist-options {
-            font-size: 0.8rem;
-            margin-top: 0.25rem;
+            margin-top: 0.5rem;
         }
     </style>
 
@@ -145,7 +307,6 @@
             initSignaturePad('administrator_signature_canvas', 'adminPad');
 
             // Set up form submit handler to capture signatures
-            // Select the main form by ID to avoid selecting the language switcher form
             const form = document.getElementById('usage-report-form');
             if (!form) {
                 console.error('Main form not found');
@@ -154,8 +315,6 @@
 
             form.addEventListener('submit', function(e) {
                 console.log('Form submit triggered');
-                console.log('window.operatorPad:', window.operatorPad);
-                console.log('window.adminPad:', window.adminPad);
                 
                 // Get hidden input elements
                 const operatorInput = document.getElementById('operator_signature_data');
@@ -222,181 +381,187 @@
                 }
 
                 console.log('Signatures captured successfully, submitting form...');
-                console.log('Operator input value length:', operatorInput.value.length);
-                console.log('Admin input value length:', adminInput.value.length);
                 // Allow form to submit normally
             });
         });
     </script>
 </head>
 <body>
-<div class="container">
-    <!-- Language Switcher -->
-    <div style="text-align: right; margin-bottom: 1rem;">
-        <form action="{% url 'set_language' %}" method="post" style="display: inline;">
-            {% csrf_token %}
-            <input name="next" type="hidden" value="{{ request.path }}">
-            <select name="language" onchange="this.form.submit()" style="padding: 0.3rem; border-radius: 4px; border: 1px solid #d1d5db;">
-                {% get_current_language as CURRENT_LANGUAGE %}
-                {% get_available_languages as LANGUAGES %}
-                {% for lang_code, lang_name in LANGUAGES %}
-                    <option value="{{ lang_code }}" {% if lang_code == CURRENT_LANGUAGE|default:'es' %}selected{% endif %}>
-                        {{ lang_name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </form>
+<div class="app-container">
+    <!-- Header -->
+    <div class="header">
+        <div class="language-switcher">
+            <form action="{% url 'set_language' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <input name="next" type="hidden" value="{{ request.path }}">
+                <select name="language" onchange="this.form.submit()">
+                    {% get_current_language as CURRENT_LANGUAGE %}
+                    {% get_available_languages as LANGUAGES %}
+                    {% for lang_code, lang_name in LANGUAGES %}
+                        <option value="{{ lang_code }}" {% if lang_code == CURRENT_LANGUAGE|default:'es' %}selected{% endif %}>
+                            {{ lang_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <h1 class="header-title">{% trans "Usage report" %}</h1>
+        <p class="header-subtitle">{{ machine.code }} - {{ machine.name }}</p>
     </div>
 
-    <h1>{% trans "Machine" %}: {{ machine.code }} - {{ machine.name }}</h1>
-    <p class="note">
-        {% trans "Status" %}: {{ machine.get_status_display }}<br>
-        {% trans "Type" %}: {{ machine.type }} | {% trans "Brand" %}: {{ machine.brand }} {{ machine.model }}
-    </p>
+    <!-- Form Content -->
+    <div class="form-content">
+        <form method="post" enctype="multipart/form-data" id="usage-report-form">
+            {% csrf_token %}
 
-    <form method="post" enctype="multipart/form-data" id="usage-report-form">
-        {% csrf_token %}
+            <!-- Operator & Usage Section -->
+            <div class="section">
+                <h2 class="section-title">{% trans "Operator & usage" %}</h2>
 
-        <h2>{% trans "Operator & usage" %}</h2>
+                <div class="field">
+                    <label for="id_operator_name">{% trans "Operator name" %}</label>
+                    <input type="text" name="operator_name" id="id_operator_name" required>
+                </div>
 
-        <div class="field">
-            <label for="id_operator_name">{% trans "Operator name" %}</label>
-            <input type="text" name="operator_name" id="id_operator_name" required>
-        </div>
+                <div class="field">
+                    <label for="id_engine_hours">{% trans "Engine hours" %}</label>
+                    <input type="number" step="0.01" name="engine_hours" id="id_engine_hours" required>
+                    <p class="note">{% trans "Current hour meter reading" %}</p>
+                </div>
 
-        <div class="field">
-            <label for="id_engine_hours_start">{% trans "Engine hours (start)" %}</label>
-            <input type="number" step="0.01" name="engine_hours_start" id="id_engine_hours_start" required>
-        </div>
+                <div class="field">
+                    <label for="id_fuel_level_start">{% trans "Fuel level at start (%)" %}</label>
+                    <input type="number" name="fuel_level_start" id="id_fuel_level_start" min="0" max="100">
+                </div>
 
-        <div class="field">
-            <label for="id_engine_hours_end">{% trans "Engine hours (end)" %}</label>
-            <input type="number" step="0.01" name="engine_hours_end" id="id_engine_hours_end" required>
-        </div>
+                <div class="field">
+                    <label for="id_fuel_level_end">{% trans "Fuel level at end (%)" %}</label>
+                    <input type="number" name="fuel_level_end" id="id_fuel_level_end" min="0" max="100">
+                </div>
 
-        <div class="field">
-            <label for="id_fuel_level_start">{% trans "Fuel level at start (%)" %}</label>
-            <input type="number" name="fuel_level_start" id="id_fuel_level_start" min="0" max="100">
-        </div>
+                <div class="field">
+                    <label for="id_job_site">{% trans "Job site" %}</label>
+                    <select name="job_site" id="id_job_site">
+                        <option value="">-- {% trans "Select job site" %} --</option>
+                        {% for site in job_sites %}
+                            <option value="{{ site.id }}">{{ site.code }} - {{ site.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-        <div class="field">
-            <label for="id_fuel_level_end">{% trans "Fuel level at end (%)" %}</label>
-            <input type="number" name="fuel_level_end" id="id_fuel_level_end" min="0" max="100">
-        </div>
+                <div class="field">
+                    <label for="id_notes">{% trans "Notes" %}</label>
+                    <textarea name="notes" id="id_notes" placeholder="{% trans 'Any issues, damage, or comments...' %}"></textarea>
+                </div>
 
-        <div class="field">
-            <label for="id_job_site">{% trans "Job site" %}</label>
-            <select name="job_site" id="id_job_site">
-                <option value="">-- {% trans "Select job site" %} --</option>
-                {% for site in job_sites %}
-                    <option value="{{ site.id }}">{{ site.code }} - {{ site.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
+                <!-- Hidden GPS fields filled by JS -->
+                <input type="hidden" name="latitude" id="id_latitude">
+                <input type="hidden" name="longitude" id="id_longitude">
+            </div>
 
-        <div class="field">
-            <label for="id_notes">{% trans "Notes" %}</label>
-            <textarea name="notes" id="id_notes" placeholder="{% trans 'Any issues, damage, or comments...' %}"></textarea>
-        </div>
+            <!-- Photos Section -->
+            <div class="section">
+                <h2 class="section-title">{% trans "Photos" %}</h2>
+                <p class="note">{% trans "Take clear photos of each side of the machine." %}</p>
 
-        <!-- Hidden GPS fields filled by JS -->
-        <input type="hidden" name="latitude" id="id_latitude">
-        <input type="hidden" name="longitude" id="id_longitude">
-
-        <h2>{% trans "Photos" %}</h2>
-        <p class="note">{% trans "Take clear photos of each side of the machine." %}</p>
-
-        <div class="photo-group">
-            <label>{% trans "Front" %}</label>
-            <input type="file" name="photo_front" accept="image/*" capture="environment">
-        </div>
-        <div class="photo-group">
-            <label>{% trans "Back" %}</label>
-            <input type="file" name="photo_back" accept="image/*" capture="environment">
-        </div>
-        <div class="photo-group">
-            <label>{% trans "Left side" %}</label>
-            <input type="file" name="photo_left" accept="image/*" capture="environment">
-        </div>
-        <div class="photo-group">
-            <label>{% trans "Right side" %}</label>
-            <input type="file" name="photo_right" accept="image/*" capture="environment">
-        </div>
-        <div class="photo-group">
-            <label>{% trans "Wheels / Tracks" %}</label>
-            <input type="file" name="photo_wheels" accept="image/*" capture="environment">
-        </div>
-        <div class="photo-group">
-            <label>{% trans "Cockpit / Controls" %}</label>
-            <input type="file" name="photo_cockpit" accept="image/*" capture="environment">
-        </div>
-
-        <h2>{% trans "Checklist" %}</h2>
-        <p class="note">{% trans "Mark each item as OK, Issue, or N/A." %}</p>
-        {% for item in checklist_items %}
-            <div class="checklist-item">
-                <div class="checklist-label">{{ item.label }}</div>
-                {% if item.description %}
-                    <div class="note">{{ item.description }}</div>
-                {% endif %}
-                <div class="checklist-options">
-                    <label>
-                        <input type="radio" name="check_{{ item.id }}" value="OK" checked> {% trans "OK" %}
-                    </label>
-                    <label>
-                        <input type="radio" name="check_{{ item.id }}" value="ISSUE"> {% trans "Issue" %}
-                    </label>
-                    <label>
-                        <input type="radio" name="check_{{ item.id }}" value="NA"> {% trans "N/A" %}
-                    </label>
-                    <br>
-                    <input
-                        type="text"
-                        name="check_comment_{{ item.id }}"
-                        placeholder="{% trans 'Comment if there is an issue (optional)' %}"
-                    >
+                <div class="photo-group">
+                    <label>{% trans "Front" %}</label>
+                    <input type="file" name="photo_front" accept="image/*" capture="environment">
+                </div>
+                <div class="photo-group">
+                    <label>{% trans "Back" %}</label>
+                    <input type="file" name="photo_back" accept="image/*" capture="environment">
+                </div>
+                <div class="photo-group">
+                    <label>{% trans "Left side" %}</label>
+                    <input type="file" name="photo_left" accept="image/*" capture="environment">
+                </div>
+                <div class="photo-group">
+                    <label>{% trans "Right side" %}</label>
+                    <input type="file" name="photo_right" accept="image/*" capture="environment">
+                </div>
+                <div class="photo-group">
+                    <label>{% trans "Wheels / Tracks" %}</label>
+                    <input type="file" name="photo_wheels" accept="image/*" capture="environment">
+                </div>
+                <div class="photo-group">
+                    <label>{% trans "Cockpit / Controls" %}</label>
+                    <input type="file" name="photo_cockpit" accept="image/*" capture="environment">
                 </div>
             </div>
-        {% empty %}
-            <p class="note">{% trans "No checklist items defined yet." %}</p>
-        {% endfor %}
 
-        <h2>{% trans "Signatures" %}</h2>
-        <p class="note">{% trans "Both signatures are required. Please sign in the boxes below." %}</p>
-
-        <!-- Operator Signature -->
-        <div class="field" style="margin-bottom: 1.5rem;">
-            <label>{% trans "Operator Signature" %} *</label>
-            <div style="border: 2px solid #d1d5db; border-radius: 4px; background: white; position: relative;">
-                <canvas id="operator_signature_canvas" style="width: 100%; height: 150px; touch-action: none;"></canvas>
+            <!-- Checklist Section -->
+            <div class="section">
+                <h2 class="section-title">{% trans "Checklist" %}</h2>
+                <p class="note">{% trans "Mark each item as There is an issue, No issue, or N/A." %}</p>
+                {% for item in checklist_items %}
+                    <div class="checklist-item">
+                        <div class="checklist-label">{{ item.label }}</div>
+                        {% if item.description %}
+                            <div class="checklist-description">{{ item.description }}</div>
+                        {% endif %}
+                        <div class="checklist-options">
+                            <label>
+                                <input type="radio" name="check_{{ item.id }}" value="NO_ISSUE" checked> {% trans "No issue" %}
+                            </label>
+                            <label>
+                                <input type="radio" name="check_{{ item.id }}" value="ISSUE"> {% trans "There is an issue" %}
+                            </label>
+                            <label>
+                                <input type="radio" name="check_{{ item.id }}" value="NA"> {% trans "N/A" %}
+                            </label>
+                        </div>
+                        <input
+                            type="text"
+                            name="check_comment_{{ item.id }}"
+                            class="checklist-comment"
+                            placeholder="{% trans 'Comment if there is an issue (optional)' %}"
+                        >
+                    </div>
+                {% empty %}
+                    <p class="note">{% trans "No checklist items defined yet." %}</p>
+                {% endfor %}
             </div>
-            <button type="button" onclick="if(window.operatorPad) window.operatorPad.clear();" style="margin-top: 0.5rem; padding: 0.4rem 0.8rem; background: #6b7280; color: white; border: none; border-radius: 4px; font-size: 0.85rem;">
-                {% trans "Clear" %}
-            </button>
-            <input type="hidden" name="operator_signature_data" id="operator_signature_data">
-        </div>
 
-        <!-- Administrator Name and Signature -->
-        <div class="field" style="margin-bottom: 1rem;">
-            <label for="id_administrator_name">{% trans "Administrator Name" %} *</label>
-            <input type="text" name="administrator_name" id="id_administrator_name" required>
-        </div>
+            <!-- Signatures Section -->
+            <div class="section">
+                <h2 class="section-title">{% trans "Signatures" %}</h2>
+                <p class="note">{% trans "Both signatures are required. Please sign in the boxes below." %}</p>
 
-        <div class="field" style="margin-bottom: 1.5rem;">
-            <label>{% trans "Administrator Signature" %} *</label>
-            <div style="border: 2px solid #d1d5db; border-radius: 4px; background: white; position: relative;">
-                <canvas id="administrator_signature_canvas" style="width: 100%; height: 150px; touch-action: none;"></canvas>
+                <!-- Operator Signature -->
+                <div class="signature-field">
+                    <label>{% trans "Operator Signature" %} *</label>
+                    <div class="signature-canvas-container">
+                        <canvas id="operator_signature_canvas"></canvas>
+                    </div>
+                    <button type="button" class="signature-clear-btn" onclick="if(window.operatorPad) window.operatorPad.clear();">
+                        {% trans "Clear" %}
+                    </button>
+                    <input type="hidden" name="operator_signature_data" id="operator_signature_data">
+                </div>
+
+                <!-- Administrator Name and Signature -->
+                <div class="field">
+                    <label for="id_administrator_name">{% trans "Administrator Name" %} *</label>
+                    <input type="text" name="administrator_name" id="id_administrator_name" required>
+                </div>
+
+                <div class="signature-field">
+                    <label>{% trans "Administrator Signature" %} *</label>
+                    <div class="signature-canvas-container">
+                        <canvas id="administrator_signature_canvas"></canvas>
+                    </div>
+                    <button type="button" class="signature-clear-btn" onclick="if(window.adminPad) window.adminPad.clear();">
+                        {% trans "Clear" %}
+                    </button>
+                    <input type="hidden" name="administrator_signature_data" id="administrator_signature_data">
+                </div>
             </div>
-            <button type="button" onclick="if(window.adminPad) window.adminPad.clear();" style="margin-top: 0.5rem; padding: 0.4rem 0.8rem; background: #6b7280; color: white; border: none; border-radius: 4px; font-size: 0.85rem;">
-                {% trans "Clear" %}
-            </button>
-            <input type="hidden" name="administrator_signature_data" id="administrator_signature_data">
-        </div>
 
-        <div class="field" style="margin-top: 1rem;">
+            <!-- Submit Button -->
             <button type="submit" class="btn-primary">{% trans "Submit report" %}</button>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 </body>
 </html>

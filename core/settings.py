@@ -57,6 +57,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",  # Must be after SessionMiddleware, before CommonMiddleware
+    "fleet.middleware.ForceSpanishDefaultMiddleware",  # Force Spanish for operator forms (after LocaleMiddleware)
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -131,11 +132,17 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "es"  # Default language: Spanish
+LANGUAGE_CODE = "es"  # Default language: Spanish (CRITICAL - operators don't speak English)
 
 LANGUAGES = [
     ("es", "Español"),
     ("en", "English"),
+]
+
+# Force Spanish as default - ignore browser language preferences
+# This ensures operators always see Spanish interface
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
 ]
 
 LOCALE_PATHS = [

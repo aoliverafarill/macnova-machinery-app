@@ -71,8 +71,7 @@ class UsageReportAdmin(admin.ModelAdmin):
         "operator_name",
         "administrator_name",
         "date",
-        "engine_hours_start",
-        "engine_hours_end",
+        "engine_hours",
         "hours_used",
         "fuel_level_start",
         "fuel_level_end",
@@ -102,7 +101,7 @@ class UsageReportAdmin(admin.ModelAdmin):
             "fields": ("machine", "operator_name", "date", "job_site")
         }),
         ("Engine Hours", {
-            "fields": ("engine_hours_start", "engine_hours_end")
+            "fields": ("engine_hours",)
         }),
         ("Fuel Levels", {
             "fields": ("fuel_level_start", "fuel_level_end")
