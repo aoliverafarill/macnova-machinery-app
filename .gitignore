@@ -55,6 +55,7 @@ static/
 *.swo
 *~
 .DS_Store
+.claude/
 
 # AI Context (project documentation, not code)
 AI_context.md
