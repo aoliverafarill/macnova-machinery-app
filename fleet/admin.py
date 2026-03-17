@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import (
+    Operator,
     Machine,
     JobSite,
     UsageReport,
@@ -8,6 +9,17 @@ from .models import (
     ChecklistItem,
     ChecklistEntry,
 )
+
+
+# -------------------------
+#  Operator
+# -------------------------
+
+@admin.register(Operator)
+class OperatorAdmin(admin.ModelAdmin):
+    list_display = ("name", "is_active", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("name",)
 
 
 # -------------------------
@@ -28,18 +40,24 @@ class JobSiteAdmin(admin.ModelAdmin):
 @admin.register(Machine)
 class MachineAdmin(admin.ModelAdmin):
     list_display = (
-        "code",
-        "name",
-        "type",
-        "brand",
-        "status",
-        "qr_slug",      # 👈 visible in admin
-        "is_active",
-        "created_at",
+        "code", "name", "type", "brand", "status", "qr_slug", "is_active", "created_at",
     )
-    readonly_fields = ("qr_slug",)   # 👈 visible but NOT editable
+    readonly_fields = ("qr_slug",)
     list_filter = ("type", "brand", "status", "is_active")
     search_fields = ("code", "name", "serial_number")
+    fieldsets = (
+        ("Basic Information", {
+            "fields": ("code", "name", "type", "brand", "model", "serial_number", "year", "status", "is_active")
+        }),
+        ("QR Code", {
+            "fields": ("qr_slug",),
+            "description": "Unique identifier used in QR codes. Not editable.",
+        }),
+        ("Email Notifications", {
+            "fields": ("notification_emails",),
+            "description": "Comma-separated email addresses that receive a notification when a report is submitted for this machine. Leave blank to disable notifications.",
+        }),
+    )
 
 
 # -------------------------
@@ -49,6 +67,13 @@ class MachineAdmin(admin.ModelAdmin):
 class UsagePhotoInline(admin.TabularInline):
     model = UsagePhoto
     extra = 0
+    readonly_fields = ("photo_preview",)
+
+    def photo_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="max-width:150px;max-height:100px;" />', obj.image.url)
+        return "—"
+    photo_preview.short_description = "Preview"
 
 
 # -------------------------
@@ -67,35 +92,14 @@ class ChecklistEntryInline(admin.TabularInline):
 @admin.register(UsageReport)
 class UsageReportAdmin(admin.ModelAdmin):
     list_display = (
-        "machine",
-        "operator_name",
-        "administrator_name",
-        "date",
-        "engine_hours",
-        "hours_used",
-        "fuel_level_start",
-        "fuel_level_end",
-        "job_site",
-        "has_signatures",
-        "created_at",
+        "machine", "operator_name", "administrator_name", "date",
+        "engine_hours", "hours_used", "fuel_level_start", "fuel_level_end",
+        "job_site", "has_signatures", "created_at",
     )
     list_filter = ("machine", "job_site", "date")
     search_fields = ("machine__code", "operator_name", "administrator_name")
-    # Signatures are editable in admin so they can be added/updated manually if needed
     inlines = [UsagePhotoInline, ChecklistEntryInline]
-    
-    def has_signatures(self, obj):
-        """Display checkmark if both signatures exist."""
-        has_op = bool(obj.operator_signature)
-        has_admin = bool(obj.administrator_signature)
-        if has_op and has_admin:
-            return "✓ Both"
-        elif has_op or has_admin:
-            return "⚠ Partial"
-        else:
-            return "✗ None"
-    has_signatures.short_description = "Signatures"
-    
+
     fieldsets = (
         ("Basic Information", {
             "fields": ("machine", "operator_name", "date", "job_site")
@@ -111,27 +115,22 @@ class UsageReportAdmin(admin.ModelAdmin):
         }),
         ("Signatures", {
             "fields": ("operator_signature", "administrator_name", "administrator_signature"),
-            "description": "Signatures can be uploaded here manually if they weren't captured during form submission. Both operator and administrator signatures are required. If signatures are empty, you can upload image files here."
+            "description": "Both operator and administrator signatures are required.",
         }),
         ("Notes", {
             "fields": ("notes",)
         }),
     )
-    
-    # Add read-only preview methods for signatures (optional - can be added to readonly_fields if needed)
-    def operator_signature_preview(self, obj):
-        """Show operator signature preview in admin."""
-        if obj.operator_signature:
-            return format_html('<img src="{}" style="max-width: 200px; max-height: 100px;" />', obj.operator_signature.url)
-        return "No signature uploaded"
-    operator_signature_preview.short_description = "Operator Signature Preview"
-    
-    def administrator_signature_preview(self, obj):
-        """Show administrator signature preview in admin."""
-        if obj.administrator_signature:
-            return format_html('<img src="{}" style="max-width: 200px; max-height: 100px;" />', obj.administrator_signature.url)
-        return "No signature uploaded"
-    administrator_signature_preview.short_description = "Administrator Signature Preview"
+
+    def has_signatures(self, obj):
+        has_op = bool(obj.operator_signature)
+        has_admin = bool(obj.administrator_signature)
+        if has_op and has_admin:
+            return "✓ Ambas"
+        elif has_op or has_admin:
+            return "⚠ Parcial"
+        return "✗ Ninguna"
+    has_signatures.short_description = "Firmas"
 
 
 # -------------------------
@@ -143,8 +142,6 @@ class UsagePhotoAdmin(admin.ModelAdmin):
     list_display = ("usage_report", "photo_type", "created_at")
     list_filter = ("photo_type",)
     search_fields = ("usage_report__machine__code",)
-    
-    # Removed debug logging - was only needed for troubleshooting S3 uploads
 
 
 # -------------------------
@@ -153,8 +150,8 @@ class UsagePhotoAdmin(admin.ModelAdmin):
 
 @admin.register(ChecklistItem)
 class ChecklistItemAdmin(admin.ModelAdmin):
-    list_display = ("label", "machine_type", "is_active", "display_order")
-    list_filter = ("is_active", "machine_type")
+    list_display = ("label", "question_type", "machine_type", "is_active", "display_order")
+    list_filter = ("is_active", "question_type", "machine_type")
     search_fields = ("label", "description")
     ordering = ("display_order",)
 

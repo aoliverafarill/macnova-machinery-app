@@ -10,6 +10,11 @@ urlpatterns = [
         name="machine_usage",
     ),
     path(
+        "m/<uuid:qr_slug>/submit/",
+        views.machine_usage_submit_api,
+        name="machine_usage_submit",
+    ),
+    path(
         "dashboard/",
         views.manager_dashboard,
         name="manager_dashboard",

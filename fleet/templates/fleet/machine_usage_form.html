@@ -1,567 +1,599 @@
-{% load i18n %}
-<!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE|default:'es' }}">
+{% load i18n %}<!DOCTYPE html>
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>{% trans "Usage report" %} - {{ machine.code }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            margin: 0;
-            padding: 0;
-            background: #f3f4f6;
-            color: #111827;
-        }
-        .app-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #ffffff;
-            min-height: 100vh;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-        /* Header with dark blue background */
-        .header {
-            background: #1e40af;
-            color: #ffffff;
-            padding: 1rem 1.25rem;
-            position: relative;
-        }
-        .header-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin: 0 0 0.25rem 0;
-            text-align: center;
-        }
-        .header-subtitle {
-            font-size: 0.85rem;
-            opacity: 0.95;
-            text-align: center;
-            margin: 0;
-        }
-        .language-switcher {
-            position: absolute;
-            top: 1rem;
-            right: 1.25rem;
-        }
-        .language-switcher select {
-            background: rgba(255,255,255,0.2);
-            color: #ffffff;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 4px;
-            padding: 0.3rem 0.5rem;
-            font-size: 0.8rem;
-        }
-        .language-switcher select option {
-            background: #1e40af;
-            color: #ffffff;
-        }
-        /* Form content */
-        .form-content {
-            padding: 1.5rem 1.25rem;
-        }
-        .section {
-            margin-bottom: 2rem;
-        }
-        .section-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #111827;
-            margin: 0 0 1rem 0;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #e5e7eb;
-        }
-        .field {
-            margin-bottom: 1.25rem;
-        }
-        .field label {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 0.5rem;
-        }
-        .field input[type="text"],
-        .field input[type="number"],
-        .field select,
-        .field textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-family: inherit;
-            background: #ffffff;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .field input:focus,
-        .field select:focus,
-        .field textarea:focus {
-            outline: none;
-            border-color: #1e40af;
-            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
-        }
-        .field textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        .field select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            padding-right: 2.5rem;
-        }
-        /* Photo uploads */
-        .photo-group {
-            margin-bottom: 1rem;
-        }
-        .photo-group label {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        .photo-group input[type="file"] {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 0.9rem;
-        }
-        /* Checklist */
-        .checklist-item {
-            margin-bottom: 1.25rem;
-            padding: 1rem;
-            background: #f9fafb;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-        }
-        .checklist-label {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 0.5rem;
-        }
-        .checklist-description {
-            font-size: 0.85rem;
-            color: #6b7280;
-            margin-bottom: 0.75rem;
-        }
-        .checklist-options {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-        .checklist-options label {
-            display: flex;
-            align-items: center;
-            font-size: 0.9rem;
-            font-weight: 400;
-            color: #374151;
-            cursor: pointer;
-        }
-        .checklist-options input[type="radio"] {
-            margin-right: 0.5rem;
-            width: 1.1rem;
-            height: 1.1rem;
-            cursor: pointer;
-        }
-        .checklist-comment {
-            margin-top: 0.75rem;
-            width: 100%;
-            padding: 0.6rem;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-family: inherit;
-        }
-        /* Signatures */
-        .signature-field {
-            margin-bottom: 1.5rem;
-        }
-        .signature-field label {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 0.5rem;
-        }
-        .signature-canvas-container {
-            border: 2px solid #d1d5db;
-            border-radius: 8px;
-            background: #ffffff;
-            position: relative;
-            overflow: hidden;
-        }
-        .signature-canvas-container canvas {
-            width: 100%;
-            height: 150px;
-            touch-action: none;
-            display: block;
-        }
-        .signature-clear-btn {
-            margin-top: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: #6b7280;
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .signature-clear-btn:hover {
-            background: #4b5563;
-        }
-        /* Submit button */
-        .btn-primary {
-            width: 100%;
-            padding: 1rem;
-            background: #1e40af;
-            color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            margin-top: 1rem;
-        }
-        .btn-primary:hover {
-            background: #1e3a8a;
-        }
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
-        .note {
-            font-size: 0.85rem;
-            color: #6b7280;
-            margin-top: 0.5rem;
-        }
-    </style>
-
-    <!-- SignaturePad.js library -->
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.0/dist/signature_pad.umd.min.js"></script>
-
-    <script>
-        // Translation strings for JavaScript
-        const OPERATOR_SIGNATURE_REQUIRED = "{% trans 'Operator signature is required' %}";
-        const ADMIN_SIGNATURE_REQUIRED = "{% trans 'Administrator signature is required' %}";
-
-        // Initialize everything when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            // Try to get GPS and fill hidden fields
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function (position) {
-                    const latInput = document.getElementById("id_latitude");
-                    const lonInput = document.getElementById("id_longitude");
-                    if (latInput && lonInput) {
-                        latInput.value = position.coords.latitude.toFixed(6);
-                        lonInput.value = position.coords.longitude.toFixed(6);
-                    }
-                });
-            }
-
-            // Initialize signature pads
-            function initSignaturePad(canvasId, padName) {
-                const canvas = document.getElementById(canvasId);
-                if (!canvas) {
-                    console.error('Canvas not found:', canvasId);
-                    return;
-                }
-                
-                // Set canvas size properly for mobile
-                const rect = canvas.getBoundingClientRect();
-                canvas.width = rect.width;
-                canvas.height = 150;
-                
-                const pad = new SignaturePad(canvas, {
-                    backgroundColor: 'rgb(255, 255, 255)',
-                    penColor: 'rgb(0, 0, 0)',
-                    minWidth: 1,
-                    maxWidth: 3,
-                });
-                
-                // Handle window resize
-                window.addEventListener('resize', function() {
-                    const rect = canvas.getBoundingClientRect();
-                    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-                    canvas.width = rect.width * ratio;
-                    canvas.height = 150 * ratio;
-                    canvas.getContext('2d').scale(ratio, ratio);
-                    pad.clear(); // Clear on resize
-                });
-                
-                window[padName] = pad;
-                console.log('Initialized signature pad:', padName);
-            }
-            
-            initSignaturePad('operator_signature_canvas', 'operatorPad');
-            initSignaturePad('administrator_signature_canvas', 'adminPad');
-
-            // Set up form submit handler to capture signatures
-            const form = document.getElementById('usage-report-form');
-            if (!form) {
-                console.error('Main form not found');
-                return;
-            }
-
-            form.addEventListener('submit', function(e) {
-                console.log('Form submit triggered');
-                
-                // Get hidden input elements
-                const operatorInput = document.getElementById('operator_signature_data');
-                const adminInput = document.getElementById('administrator_signature_data');
-                
-                if (!operatorInput || !adminInput) {
-                    console.error('Signature input fields not found');
-                    e.preventDefault();
-                    alert('Error: Signature fields not found. Please refresh the page.');
-                    return false;
-                }
-
-                // Capture operator signature
-                if (!window.operatorPad) {
-                    console.error('Operator signature pad not initialized');
-                    e.preventDefault();
-                    alert('Error: Signature pad not initialized. Please refresh the page.');
-                    return false;
-                }
-                
-                if (window.operatorPad.isEmpty()) {
-                    console.error('Operator signature is empty');
-                    e.preventDefault();
-                    alert(OPERATOR_SIGNATURE_REQUIRED);
-                    return false;
-                }
-                
-                const operatorData = window.operatorPad.toDataURL('image/png');
-                operatorInput.value = operatorData;
-                console.log('Operator signature captured:', operatorData.length, 'chars');
-
-                // Capture administrator signature
-                if (!window.adminPad) {
-                    console.error('Administrator signature pad not initialized');
-                    e.preventDefault();
-                    alert('Error: Administrator signature pad not initialized. Please refresh the page.');
-                    return false;
-                }
-                
-                if (window.adminPad.isEmpty()) {
-                    console.error('Administrator signature is empty');
-                    e.preventDefault();
-                    alert(ADMIN_SIGNATURE_REQUIRED);
-                    return false;
-                }
-                
-                const adminData = window.adminPad.toDataURL('image/png');
-                adminInput.value = adminData;
-                console.log('Administrator signature captured:', adminData.length, 'chars');
-
-                // Verify data was set
-                if (!operatorInput.value || operatorInput.value.length === 0) {
-                    console.error('Operator signature data not set in input');
-                    e.preventDefault();
-                    alert('Error: Failed to capture operator signature. Please try again.');
-                    return false;
-                }
-                
-                if (!adminInput.value || adminInput.value.length === 0) {
-                    console.error('Administrator signature data not set in input');
-                    e.preventDefault();
-                    alert('Error: Failed to capture administrator signature. Please try again.');
-                    return false;
-                }
-
-                console.log('Signatures captured successfully, submitting form...');
-                // Allow form to submit normally
-            });
-        });
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#2d5fa6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Reporte — {{ machine.code }}</title>
+<link rel="manifest" href="/static/fleet/manifest.json">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #2d5fa6; --blue-light: #dce8f5; --red: #9b1c1c; --green: #166534;
+    --green-light: #dcfce7; --red-light: #fee2e2; --gray: #6b7280;
+    --border: #c9d8ec; --white: #fff; --text: #1e293b; --radius: 8px;
+  }
+  html, body { height: 100%; background: var(--blue-light); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); -webkit-font-smoothing: antialiased; }
+  .screen { display: none; flex-direction: column; min-height: 100dvh; padding-bottom: 80px; }
+  .screen.active { display: flex; }
+  .header { background: var(--blue); color: #fff; padding: 16px 20px 12px; position: sticky; top: 0; z-index: 10; }
+  .header-machine { font-size: 11px; opacity: .75; letter-spacing: .08em; text-transform: uppercase; }
+  .header-title { font-size: 18px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-top: 2px; }
+  .progress-bar { height: 4px; background: rgba(255,255,255,.25); border-radius: 2px; margin-top: 10px; }
+  .progress-fill { height: 100%; background: #fff; border-radius: 2px; transition: width .3s; }
+  .body { flex: 1; padding: 20px 16px; }
+  /* Welcome */
+  .welcome-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; padding: 40px 24px; text-align: center; gap: 20px; }
+  .welcome-logo { font-size: 48px; }
+  .welcome-title { font-size: 22px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--blue); }
+  .welcome-machine { font-size: 15px; color: var(--gray); }
+  .welcome-machine strong { display: block; font-size: 20px; font-weight: 700; color: var(--text); margin-top: 4px; }
+  /* Fields */
+  .field-group { margin-bottom: 20px; }
+  .field-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
+  .field-readonly { background: #fff; border: 2px solid var(--border); border-radius: var(--radius); padding: 14px 16px; font-size: 18px; font-weight: 600; color: var(--gray); width: 100%; }
+  select, input[type=text], input[type=number], textarea { width: 100%; background: #fff; border: 2px solid var(--border); border-radius: var(--radius); padding: 14px 16px; font-size: 16px; color: var(--text); -webkit-appearance: none; outline: none; transition: border-color .15s; }
+  select:focus, input:focus, textarea:focus { border-color: var(--blue); }
+  .select-wrap { position: relative; }
+  .select-wrap::after { content: "▼"; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #fff; pointer-events: none; }
+  .select-wrap select { background: var(--blue); color: #fff; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding-right: 36px; }
+  .select-wrap select option { background: #fff; color: var(--text); font-weight: 400; text-transform: none; }
+  input[type=number] { font-size: 24px; font-weight: 700; text-align: center; letter-spacing: .04em; }
+  /* Toggles */
+  .toggle-question { margin-bottom: 16px; }
+  .toggle-label { font-size: 11px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: var(--blue); margin-bottom: 8px; }
+  .toggle-row { display: flex; gap: 8px; }
+  .toggle-btn { flex: 1; padding: 14px 8px; border: 2px solid var(--border); border-radius: var(--radius); background: #fff; font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: all .15s; color: var(--gray); }
+  .toggle-btn.selected-yes { background: var(--green-light); border-color: var(--green); color: var(--green); }
+  .toggle-btn.selected-no  { background: var(--red-light);   border-color: var(--red);   color: var(--red); }
+  /* Photos */
+  .photo-progress { text-align: center; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--gray); }
+  .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .photo-slot { position: relative; aspect-ratio: 1; background: #fff; border: 2px dashed var(--border); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; overflow: hidden; }
+  .photo-slot.has-photo { border-style: solid; border-color: var(--green); }
+  .photo-slot-icon { font-size: 28px; }
+  .photo-slot-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gray); text-align: center; padding: 0 4px; }
+  .photo-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .photo-check { position: absolute; top: 6px; right: 6px; background: var(--green); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  input[type=file].photo-input { display: none; }
+  /* Summary */
+  .summary-section { background: #fff; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  .summary-section-title { font-size: 10px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: var(--blue); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+  .summary-edit-btn { font-size: 11px; color: var(--blue); font-weight: 600; cursor: pointer; text-decoration: underline; }
+  .summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--blue-light); }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row .lbl { color: var(--gray); }
+  .summary-row .val { font-weight: 600; text-align: right; max-width: 60%; }
+  .val.ok  { color: var(--green); }
+  .val.bad { color: var(--red); }
+  /* Signature */
+  .sig-wrap { background: #fff; border: 2px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .sig-wrap canvas { display: block; width: 100%; touch-action: none; cursor: crosshair; }
+  .sig-clear { font-size: 12px; color: var(--gray); text-decoration: underline; cursor: pointer; padding: 6px 0; display: block; text-align: right; }
+  /* Bottom nav */
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 10px; padding: 12px 16px; background: var(--blue-light); border-top: 1px solid var(--border); z-index: 20; }
+  .btn { flex: 1; padding: 16px; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: opacity .15s, transform .1s; }
+  .btn:active { transform: scale(.97); opacity: .9; }
+  .btn-back    { background: var(--red); color: #fff; }
+  .btn-next    { background: var(--blue); color: #fff; }
+  .btn-primary { background: var(--blue); color: #fff; width: 100%; }
+  .btn-submit  { background: #15803d; color: #fff; width: 100%; }
+  /* Offline banner */
+  #offline-banner { display: none; background: #fef3c7; border-bottom: 2px solid #f59e0b; padding: 8px 16px; font-size: 12px; font-weight: 600; color: #92400e; text-align: center; }
+  body.offline #offline-banner { display: block; }
+  /* Toast */
+  #toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 24px; font-size: 13px; font-weight: 600; z-index: 100; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+  #toast.show { opacity: 1; }
+  /* Spinner */
+  #spinner { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.7); align-items: center; justify-content: center; z-index: 200; }
+  #spinner.show { display: flex; }
+  .spinner-ring { width: 48px; height: 48px; border: 5px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
-<div class="app-container">
-    <!-- Header -->
-    <div class="header">
-        <div class="language-switcher">
-            <form action="{% url 'set_language' %}" method="post" style="display: inline;">
-                {% csrf_token %}
-                <input name="next" type="hidden" value="{{ request.path }}">
-                <select name="language" onchange="this.form.submit()">
-                    {% get_current_language as CURRENT_LANGUAGE %}
-                    {% get_available_languages as LANGUAGES %}
-                    {% for lang_code, lang_name in LANGUAGES %}
-                        <option value="{{ lang_code }}" {% if lang_code == CURRENT_LANGUAGE|default:'es' %}selected{% endif %}>
-                            {{ lang_name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </form>
-        </div>
-        <h1 class="header-title">{% trans "Usage report" %}</h1>
-        <p class="header-subtitle">{{ machine.code }} - {{ machine.name }}</p>
+
+<div id="offline-banner">⚠ Sin conexión — el reporte se guardará localmente y se enviará cuando haya internet</div>
+<div id="toast"></div>
+<div id="spinner"><div class="spinner-ring"></div></div>
+
+<!-- ── SCREEN 0: WELCOME ───────────────────────────────────────────────── -->
+<div class="screen active" id="screen-0">
+  <div class="welcome-wrap">
+    <div class="welcome-logo">🏗️</div>
+    <div class="welcome-title">Reporte Diario de Maquinaria</div>
+    <div class="welcome-machine">
+      {{ machine.type|upper|default:"MAQUINARIA" }}
+      <strong>{{ machine.code }} — {{ machine.name }}</strong>
     </div>
-
-    <!-- Form Content -->
-    <div class="form-content">
-        <form method="post" enctype="multipart/form-data" id="usage-report-form">
-            {% csrf_token %}
-
-            <!-- Operator & Usage Section -->
-            <div class="section">
-                <h2 class="section-title">{% trans "Operator & usage" %}</h2>
-
-                <div class="field">
-                    <label for="id_operator_name">{% trans "Operator name" %}</label>
-                    <input type="text" name="operator_name" id="id_operator_name" required>
-                </div>
-
-                <div class="field">
-                    <label for="id_engine_hours">Horas del motor</label>
-                    <input type="number" step="0.01" name="engine_hours" id="id_engine_hours" required>
-                    <p class="note">Lectura actual del medidor de horas</p>
-                </div>
-
-                <div class="field">
-                    <label for="id_fuel_level_start">{% trans "Fuel level at start (%)" %}</label>
-                    <input type="number" name="fuel_level_start" id="id_fuel_level_start" min="0" max="100">
-                </div>
-
-                <div class="field">
-                    <label for="id_fuel_level_end">{% trans "Fuel level at end (%)" %}</label>
-                    <input type="number" name="fuel_level_end" id="id_fuel_level_end" min="0" max="100">
-                </div>
-
-                <div class="field">
-                    <label for="id_job_site">{% trans "Job site" %}</label>
-                    <select name="job_site" id="id_job_site">
-                        <option value="">-- {% trans "Select job site" %} --</option>
-                        {% for site in job_sites %}
-                            <option value="{{ site.id }}">{{ site.code }} - {{ site.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="id_notes">{% trans "Notes" %}</label>
-                    <textarea name="notes" id="id_notes" placeholder="{% trans 'Any issues, damage, or comments...' %}"></textarea>
-                </div>
-
-                <!-- Hidden GPS fields filled by JS -->
-                <input type="hidden" name="latitude" id="id_latitude">
-                <input type="hidden" name="longitude" id="id_longitude">
-            </div>
-
-            <!-- Photos Section -->
-            <div class="section">
-                <h2 class="section-title">{% trans "Photos" %}</h2>
-                <p class="note">{% trans "Take clear photos of each side of the machine." %}</p>
-
-                <div class="photo-group">
-                    <label>{% trans "Front" %}</label>
-                    <input type="file" name="photo_front" accept="image/*" capture="environment">
-                </div>
-                <div class="photo-group">
-                    <label>{% trans "Back" %}</label>
-                    <input type="file" name="photo_back" accept="image/*" capture="environment">
-                </div>
-                <div class="photo-group">
-                    <label>{% trans "Left side" %}</label>
-                    <input type="file" name="photo_left" accept="image/*" capture="environment">
-                </div>
-                <div class="photo-group">
-                    <label>{% trans "Right side" %}</label>
-                    <input type="file" name="photo_right" accept="image/*" capture="environment">
-                </div>
-                <div class="photo-group">
-                    <label>{% trans "Wheels / Tracks" %}</label>
-                    <input type="file" name="photo_wheels" accept="image/*" capture="environment">
-                </div>
-                <div class="photo-group">
-                    <label>{% trans "Cockpit / Controls" %}</label>
-                    <input type="file" name="photo_cockpit" accept="image/*" capture="environment">
-                </div>
-            </div>
-
-            <!-- Checklist Section -->
-            <div class="section">
-                <h2 class="section-title">{% trans "Checklist" %}</h2>
-                <p class="note">{% trans "Mark each item as There is an issue, No issue, or N/A." %}</p>
-                {% for item in checklist_items %}
-                    <div class="checklist-item">
-                        <div class="checklist-label">{{ item.label }}</div>
-                        {% if item.description %}
-                            <div class="checklist-description">{{ item.description }}</div>
-                        {% endif %}
-                        <div class="checklist-options">
-                            <label>
-                                <input type="radio" name="check_{{ item.id }}" value="NO_ISSUE" checked> {% trans "No issue" %}
-                            </label>
-                            <label>
-                                <input type="radio" name="check_{{ item.id }}" value="ISSUE"> {% trans "There is an issue" %}
-                            </label>
-                            <label>
-                                <input type="radio" name="check_{{ item.id }}" value="NA"> {% trans "N/A" %}
-                            </label>
-                        </div>
-                        <input
-                            type="text"
-                            name="check_comment_{{ item.id }}"
-                            class="checklist-comment"
-                            placeholder="{% trans 'Comment if there is an issue (optional)' %}"
-                        >
-                    </div>
-                {% empty %}
-                    <p class="note">{% trans "No checklist items defined yet." %}</p>
-                {% endfor %}
-            </div>
-
-            <!-- Signatures Section -->
-            <div class="section">
-                <h2 class="section-title">{% trans "Signatures" %}</h2>
-                <p class="note">{% trans "Both signatures are required. Please sign in the boxes below." %}</p>
-
-                <!-- Operator Signature -->
-                <div class="signature-field">
-                    <label>{% trans "Operator Signature" %} *</label>
-                    <div class="signature-canvas-container">
-                        <canvas id="operator_signature_canvas"></canvas>
-                    </div>
-                    <button type="button" class="signature-clear-btn" onclick="if(window.operatorPad) window.operatorPad.clear();">
-                        {% trans "Clear" %}
-                    </button>
-                    <input type="hidden" name="operator_signature_data" id="operator_signature_data">
-                </div>
-
-                <!-- Administrator Name and Signature -->
-                <div class="field">
-                    <label for="id_administrator_name">{% trans "Administrator Name" %} *</label>
-                    <input type="text" name="administrator_name" id="id_administrator_name" required>
-                </div>
-
-                <div class="signature-field">
-                    <label>{% trans "Administrator Signature" %} *</label>
-                    <div class="signature-canvas-container">
-                        <canvas id="administrator_signature_canvas"></canvas>
-                    </div>
-                    <button type="button" class="signature-clear-btn" onclick="if(window.adminPad) window.adminPad.clear();">
-                        {% trans "Clear" %}
-                    </button>
-                    <input type="hidden" name="administrator_signature_data" id="administrator_signature_data">
-                </div>
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" class="btn-primary">{% trans "Submit report" %}</button>
-        </form>
-    </div>
+    <button class="btn btn-primary" style="max-width:280px;margin-top:16px;" onclick="goTo(1)">
+      INICIAR REPORTE
+    </button>
+  </div>
 </div>
+
+<!-- ── SCREEN 1: IDENTIFICACIÓN ───────────────────────────────────────── -->
+<div class="screen" id="screen-1">
+  <div class="header">
+    <div class="header-machine">{{ machine.code }} — {{ machine.name }}</div>
+    <div class="header-title">IDENTIFICACIÓN</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:14%"></div></div>
+  </div>
+  <div class="body">
+    <div class="field-group">
+      <label class="field-label">OPERADOR</label>
+      <div class="select-wrap">
+        <select id="operator_name">
+          <option value="">— SELECCIONE OPERADOR —</option>
+          {% for op in operators %}
+          <option value="{{ op.name }}">{{ op.name|upper }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">RESPONSABLE DE OBRA / SITIO</label>
+      <div class="select-wrap">
+        <select id="job_site">
+          <option value="">— SIN OBRA ASIGNADA —</option>
+          {% for site in job_sites %}
+          <option value="{{ site.id }}">{{ site.name|upper }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="btn btn-back" onclick="goTo(0)">ATRÁS</button>
+    <button class="btn btn-next" onclick="nextFrom1()">CONTINUAR</button>
+  </div>
+</div>
+
+<!-- ── SCREEN 2: HORÓMETRO ────────────────────────────────────────────── -->
+<div class="screen" id="screen-2">
+  <div class="header">
+    <div class="header-machine">{{ machine.code }} — {{ machine.name }}</div>
+    <div class="header-title">HORÓMETRO</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:28%"></div></div>
+  </div>
+  <div class="body">
+    <div class="field-group">
+      <label class="field-label">HOROMETRO INICIAL (último registro)</label>
+      <div class="field-readonly">
+        {% if last_engine_hours %}{{ last_engine_hours }}{% else %}— Sin registro previo —{% endif %}
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">HOROMETRO FINAL</label>
+      <input type="number" id="engine_hours" inputmode="numeric" pattern="[0-9]*"
+             placeholder="INGRESE HOROMETRO FINAL" min="0" step="0.1">
+    </div>
+    <div class="field-group">
+      <label class="field-label">FOTO DEL HORÓMETRO (opcional)</label>
+      <div class="photo-slot" style="aspect-ratio:16/9;width:100%;" id="slot-meter" onclick="triggerPhoto('meter')">
+        <div class="photo-slot-icon">📸</div>
+        <div class="photo-slot-label">PULSAR PARA TOMAR FOTO DEL HORÓMETRO</div>
+      </div>
+      <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-meter"
+             onchange="handlePhoto('meter', this)">
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="btn btn-back" onclick="goTo(1)">ATRÁS</button>
+    <button class="btn btn-next" onclick="nextFrom2()">CONTINUAR</button>
+  </div>
+</div>
+
+<!-- ── SCREEN 3: CHECKLIST SÍ/NO ─────────────────────────────────────── -->
+<div class="screen" id="screen-3">
+  <div class="header">
+    <div class="header-machine">{{ machine.code }} — {{ machine.name }}</div>
+    <div class="header-title">CHECKLIST DEL EQUIPO 1/2</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:42%"></div></div>
+  </div>
+  <div class="body">
+    {% for item in yes_no_items %}
+    <div class="toggle-question">
+      <div class="toggle-label">{{ item.label|upper }}</div>
+      <div class="toggle-row">
+        <button class="toggle-btn" onclick="selectToggle(this, '{{ item.id }}', 'SI')">SI</button>
+        <button class="toggle-btn" onclick="selectToggle(this, '{{ item.id }}', 'NO')">NO</button>
+      </div>
+    </div>
+    {% empty %}
+    <p style="color:var(--gray);text-align:center;padding:40px 0;">No hay preguntas configuradas.<br>Añádalas en el panel de administración.</p>
+    {% endfor %}
+  </div>
+  <div class="bottom-nav">
+    <button class="btn btn-back" onclick="goTo(2)">ATRÁS</button>
+    <button class="btn btn-next" onclick="goTo(4)">CONTINUAR</button>
+  </div>
+</div>
+
+<!-- ── SCREEN 4: CHECKLIST ESTADO ────────────────────────────────────── -->
+<div class="screen" id="screen-4">
+  <div class="header">
+    <div class="header-machine">{{ machine.code }} — {{ machine.name }}</div>
+    <div class="header-title">CHECKLIST DEL EQUIPO 2/2</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:57%"></div></div>
+  </div>
+  <div class="body">
+    {% for item in condition_items %}
+    <div class="field-group">
+      <label class="field-label">{{ item.label|upper }}</label>
+      <div class="select-wrap">
+        <select id="check_{{ item.id }}" data-item="{{ item.id }}">
+          <option value="">— SELECCIONE —</option>
+          <option value="BUEN_ESTADO">BUEN ESTADO</option>
+          <option value="MAL_ESTADO">MAL ESTADO</option>
+        </select>
+      </div>
+    </div>
+    {% endfor %}
+    {% for item in fuel_items %}
+    <div class="field-group">
+      <label class="field-label">{{ item.label|upper }}</label>
+      <div class="select-wrap">
+        <select id="check_{{ item.id }}" data-item="{{ item.id }}">
+          <option value="">— SELECCIONE —</option>
+          <option value="BAJO">BAJO</option>
+          <option value="MEDIO">MEDIO</option>
+          <option value="LLENO">LLENO</option>
+        </select>
+      </div>
+    </div>
+    {% endfor %}
+    {% for item in extintor_items %}
+    <div class="field-group">
+      <label class="field-label">{{ item.label|upper }}</label>
+      <div class="select-wrap">
+        <select id="check_{{ item.id }}" data-item="{{ item.id }}">
+          <option value="">— SELECCIONE —</option>
+          <option value="HAY">HAY</option>
+          <option value="NO_HAY">NO HAY</option>
+        </select>
+      </div>
+    </div>
+    {% endfor %}
+    {% if not condition_items and not fuel_items and not extintor_items %}
+    <p style="color:var(--gray);text-align:center;padding:40px 0;">No hay preguntas de estado configuradas.</p>
+    {% endif %}
+  </div>
+  <div class="bottom-nav">
+    <button class="btn btn-back" onclick="goTo(3)">ATRÁS</button>
+    <button class="btn btn-next" onclick="collectConditionChecklist(); goTo(5)">CONTINUAR</button>
+  </div>
+</div>
+
+<!-- ── SCREEN 5: FOTOGRAFÍAS ─────────────────────────────────────────── -->
+<div class="screen" id="screen-5">
+  <div class="header">
+    <div class="header-machine">{{ machine.code }} — {{ machine.name }}</div>
+    <div class="header-title">FOTOGRAFÍAS DEL REPORTE</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:71%"></div></div>
+  </div>
+  <div class="body">
+    <div class="photo-progress" id="photo-count-label">0 / 10 fotos tomadas</div>
+    <div class="photo-grid">
+      <div class="photo-slot" id="slot-placa"   onclick="triggerPhoto('placa')">  <div class="photo-slot-icon">🪪</div><div class="photo-slot-label">PLACA / IDENTIFICACIÓN</div></div>
+      <div class="photo-slot" id="slot-front"   onclick="triggerPhoto('front')">  <div class="photo-slot-icon">⬆️</div><div class="photo-slot-label">FRENTE</div></div>
+      <div class="photo-slot" id="slot-back"    onclick="triggerPhoto('back')">   <div class="photo-slot-icon">⬇️</div><div class="photo-slot-label">ATRÁS</div></div>
+      <div class="photo-slot" id="slot-left"    onclick="triggerPhoto('left')">   <div class="photo-slot-icon">⬅️</div><div class="photo-slot-label">LADO IZQUIERDO</div></div>
+      <div class="photo-slot" id="slot-right"   onclick="triggerPhoto('right')">  <div class="photo-slot-icon">➡️</div><div class="photo-slot-label">LADO DERECHO</div></div>
+      <div class="photo-slot" id="slot-wheels"  onclick="triggerPhoto('wheels')"> <div class="photo-slot-icon">⚙️</div><div class="photo-slot-label">ORUGAS / NEUMÁTICOS</div></div>
+      <div class="photo-slot" id="slot-cockpit" onclick="triggerPhoto('cockpit')"><div class="photo-slot-icon">🪑</div><div class="photo-slot-label">CABINA</div></div>
+      <div class="photo-slot" id="slot-engine"  onclick="triggerPhoto('engine')"> <div class="photo-slot-icon">🔧</div><div class="photo-slot-label">MOTOR</div></div>
+      <div class="photo-slot" id="slot-meter2"  onclick="triggerPhoto('meter2')"> <div class="photo-slot-icon">🕐</div><div class="photo-slot-label">HORÓMETRO</div></div>
+      <div class="photo-slot" id="slot-other"   onclick="triggerPhoto('other')">  <div class="photo-slot-icon">📷</div><div class="photo-slot-label">OTRA</div></div>
+    </div>
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-placa"   onchange="handlePhoto('placa',   this)">
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-front"   onchange="handlePhoto('front',   this)">
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-back"    onchange="handlePhoto('back',    this)">
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-left"    onchange="handlePhoto('left',    this)">
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-right"   onchange="handlePhoto('right',   this)">
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-wheels"  onchange="handlePhoto('wheels',  this)">
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-cockpit" onchange="handlePhoto('cockpit', this)">
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-engine"  onchange="handlePhoto('engine',  this)">
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-meter2"  onchange="handlePhoto('meter2',  this)">
+    <input type="file" accept="image/*" capture="environment" class="photo-input" id="input-other"   onchange="handlePhoto('other',   this)">
+  </div>
+  <div class="bottom-nav">
+    <button class="btn btn-back" onclick="goTo(4)">ATRÁS</button>
+    <button class="btn btn-next" onclick="goTo(6)">CONTINUAR</button>
+  </div>
+</div>
+
+<!-- ── SCREEN 6: RESUMEN + FIRMA ─────────────────────────────────────── -->
+<div class="screen" id="screen-6">
+  <div class="header">
+    <div class="header-machine">{{ machine.code }} — {{ machine.name }}</div>
+    <div class="header-title">RESUMEN Y FIRMA</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div>
+  </div>
+  <div class="body">
+    <div class="summary-section">
+      <div class="summary-section-title">IDENTIFICACIÓN <span class="summary-edit-btn" onclick="goTo(1)">Editar</span></div>
+      <div class="summary-row"><span class="lbl">Operador</span><span class="val" id="sum-operator">—</span></div>
+      <div class="summary-row"><span class="lbl">Obra / Sitio</span><span class="val" id="sum-jobsite">—</span></div>
+    </div>
+    <div class="summary-section">
+      <div class="summary-section-title">HORÓMETRO <span class="summary-edit-btn" onclick="goTo(2)">Editar</span></div>
+      <div class="summary-row"><span class="lbl">Lectura final</span><span class="val" id="sum-hours">—</span></div>
+    </div>
+    <div class="summary-section">
+      <div class="summary-section-title">CHECKLIST <span class="summary-edit-btn" onclick="goTo(3)">Editar</span></div>
+      <div id="sum-checklist"></div>
+    </div>
+    <div class="summary-section">
+      <div class="summary-section-title">FOTOGRAFÍAS <span class="summary-edit-btn" onclick="goTo(5)">Editar</span></div>
+      <div class="summary-row"><span class="lbl">Tomadas</span><span class="val" id="sum-photos">0 / 10</span></div>
+    </div>
+
+    <div class="field-group" style="margin-top:20px;">
+      <label class="field-label">FIRMA DEL OPERADOR</label>
+      <div class="sig-wrap"><canvas id="sig-operator" height="160"></canvas></div>
+      <span class="sig-clear" onclick="clearSig('operator')">Limpiar firma</span>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">NOMBRE DEL ADMINISTRADOR / RESPONSABLE</label>
+      <input type="text" id="administrator_name" placeholder="NOMBRE COMPLETO">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">FIRMA DEL ADMINISTRADOR</label>
+      <div class="sig-wrap"><canvas id="sig-administrator" height="160"></canvas></div>
+      <span class="sig-clear" onclick="clearSig('administrator')">Limpiar firma</span>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">NOTAS (opcional)</label>
+      <textarea id="notes" rows="3" placeholder="Observaciones adicionales..."></textarea>
+    </div>
+
+    <button class="btn btn-submit" onclick="submitReport()" style="margin-top:8px;">
+      ✔ ENVIAR REPORTE
+    </button>
+    <div style="height:20px;"></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="btn btn-back" onclick="goTo(5)">ATRÁS</button>
+  </div>
+</div>
+
+<!-- ── SCREEN 7: SUCCESS ──────────────────────────────────────────────── -->
+<div class="screen" id="screen-7">
+  <div class="welcome-wrap">
+    <div class="welcome-logo">✅</div>
+    <div class="welcome-title" style="color:#15803d;">REPORTE ENVIADO</div>
+    <p style="color:var(--gray);font-size:14px;max-width:280px;margin:0 auto;">El reporte fue registrado exitosamente. Puede cerrar esta página.</p>
+    <div id="success-offline-msg" style="display:none;background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:14px;margin-top:8px;font-size:13px;color:#92400e;max-width:300px;text-align:center;">
+      📶 Sin conexión — el reporte está guardado localmente y se enviará automáticamente cuando haya internet.
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script src="/static/fleet/js/offline_queue.js"></script>
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+const MACHINE_QR = "{{ machine.qr_slug }}";
+const SUBMIT_URL = "/m/" + MACHINE_QR + "/submit/";
+const CSRF_TOKEN = "{{ csrf_token }}";
+
+const PHOTO_TYPE_MAP = {
+  placa:"PLACA", front:"FRONT", back:"BACK", left:"LEFT", right:"RIGHT",
+  wheels:"WHEELS", cockpit:"COCKPIT", engine:"ENGINE",
+  meter:"METER", meter2:"METER", other:"OTHER"
+};
+
+const checklistLabels = {
+  {% for item in yes_no_items %}  "{{ item.id }}": "{{ item.label|escapejs }}",
+  {% endfor %}{% for item in condition_items %}  "{{ item.id }}": "{{ item.label|escapejs }}",
+  {% endfor %}{% for item in fuel_items %}  "{{ item.id }}": "{{ item.label|escapejs }}",
+  {% endfor %}{% for item in extintor_items %}  "{{ item.id }}": "{{ item.label|escapejs }}",
+  {% endfor %}
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  currentScreen: 0,
+  operator_name: "", job_site: "", job_site_name: "", engine_hours: "",
+  checklist: {}, photos: {}
+};
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function goTo(n) {
+  document.getElementById("screen-" + state.currentScreen).classList.remove("active");
+  state.currentScreen = n;
+  document.getElementById("screen-" + n).classList.add("active");
+  if (n === 6) { buildSummary(); setTimeout(initSigPads, 60); }
+  window.scrollTo(0, 0);
+}
+
+// ── Step validation ────────────────────────────────────────────────────────
+function nextFrom1() {
+  const op = document.getElementById("operator_name").value;
+  if (!op) { toast("Seleccione un operador"); return; }
+  state.operator_name = op;
+  state.job_site = document.getElementById("job_site").value;
+  const sel = document.getElementById("job_site");
+  state.job_site_name = sel.options[sel.selectedIndex].text;
+  goTo(2);
+}
+
+function nextFrom2() {
+  const h = document.getElementById("engine_hours").value.trim();
+  if (!h) { toast("Ingrese el horómetro final"); return; }
+  state.engine_hours = h;
+  goTo(3);
+}
+
+function collectConditionChecklist() {
+  document.querySelectorAll("[data-item]").forEach(el => {
+    if (el.value) state.checklist[el.dataset.item] = el.value;
+  });
+}
+
+// ── Toggle buttons ─────────────────────────────────────────────────────────
+function selectToggle(btn, itemId, val) {
+  const row = btn.closest(".toggle-row");
+  row.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("selected-yes","selected-no"));
+  btn.classList.add(val === "SI" ? "selected-yes" : "selected-no");
+  state.checklist[itemId] = val;
+}
+
+// ── Photos ─────────────────────────────────────────────────────────────────
+function triggerPhoto(key) { document.getElementById("input-" + key).click(); }
+
+function handlePhoto(key, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    state.photos[key] = { dataUrl, type: PHOTO_TYPE_MAP[key] || "OTHER" };
+    const slot = document.getElementById("slot-" + key);
+    slot.innerHTML = `<img src="${dataUrl}" alt=""><div class="photo-check">✓</div>`;
+    slot.classList.add("has-photo");
+    const label = document.getElementById("photo-count-label");
+    if (label) label.textContent = Object.keys(state.photos).length + " / 10 fotos tomadas";
+  };
+  reader.readAsDataURL(file);
+  input.value = "";
+}
+
+// ── Signatures ─────────────────────────────────────────────────────────────
+const sigPads = {};
+
+function initSigPads() {
+  ["operator", "administrator"].forEach(id => {
+    if (sigPads[id]) return;
+    const canvas = document.getElementById("sig-" + id);
+    if (!canvas) return;
+    canvas.width  = canvas.parentElement.clientWidth || 340;
+    canvas.height = 160;
+    sigPads[id] = new SignaturePad(canvas, { backgroundColor: "rgb(255,255,255)" });
+  });
+}
+
+function clearSig(id) { if (sigPads[id]) sigPads[id].clear(); }
+
+// ── Summary ────────────────────────────────────────────────────────────────
+function buildSummary() {
+  document.getElementById("sum-operator").textContent = state.operator_name || "—";
+  document.getElementById("sum-jobsite").textContent  = state.job_site_name || "Sin obra asignada";
+  document.getElementById("sum-hours").textContent    = state.engine_hours  || "—";
+  document.getElementById("sum-photos").textContent   = Object.keys(state.photos).length + " / 10";
+
+  const cl = document.getElementById("sum-checklist");
+  cl.innerHTML = "";
+  Object.entries(state.checklist).forEach(([id, val]) => {
+    const label = checklistLabels[id] || id;
+    const ok  = ["SI","BUEN_ESTADO","LLENO","MEDIO","HAY"].includes(val);
+    const bad = ["NO","MAL_ESTADO","BAJO","NO_HAY"].includes(val);
+    cl.innerHTML += `<div class="summary-row"><span class="lbl">${label}</span><span class="val ${ok?'ok':''} ${bad?'bad':''}">${val.replace("_"," ")}</span></div>`;
+  });
+}
+
+// ── Submit ─────────────────────────────────────────────────────────────────
+async function submitReport() {
+  initSigPads();
+  const adminName = document.getElementById("administrator_name").value.trim();
+  if (!adminName) { toast("Ingrese el nombre del administrador"); return; }
+
+  const opSig    = sigPads["operator"];
+  const adminSig = sigPads["administrator"];
+  if (!opSig || opSig.isEmpty())    { toast("Firma del operador requerida"); return; }
+  if (!adminSig || adminSig.isEmpty()) { toast("Firma del administrador requerida"); return; }
+
+  showSpinner(true);
+
+  // Collect condition checklist selects (in case operator skipped and came back)
+  collectConditionChecklist();
+
+  const photosArr = Object.values(state.photos).map(p => ({ type: p.type, data: p.dataUrl }));
+
+  const payload = {
+    operator_name: state.operator_name,
+    job_site: state.job_site,
+    engine_hours: state.engine_hours,
+    administrator_name: adminName,
+    notes: document.getElementById("notes").value,
+    operator_signature_data: opSig.toDataURL("image/png"),
+    administrator_signature_data: adminSig.toDataURL("image/png"),
+    photos_base64: photosArr,
+    checklist: state.checklist,
+    latitude: null, longitude: null,
+  };
+
+  // Try GPS (non-blocking, 5s timeout)
+  try {
+    if (navigator.geolocation) {
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 })
+      );
+      payload.latitude  = pos.coords.latitude;
+      payload.longitude = pos.coords.longitude;
+    }
+  } catch (_) {}
+
+  // Always persist to IndexedDB first
+  let localId = null;
+  try { localId = await OfflineQueue.saveReport(MACHINE_QR, payload); } catch(e) { console.warn("IndexedDB:", e); }
+
+  if (navigator.onLine) {
+    try {
+      const res = await fetch(SUBMIT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF_TOKEN },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (localId) try { await OfflineQueue.markSynced(localId); } catch(_) {}
+        showSpinner(false);
+        showSuccessScreen(false);
+        return;
+      }
+    } catch(e) { console.error("Submit failed:", e); }
+  }
+
+  // Offline or failed
+  if ("serviceWorker" in navigator && "SyncManager" in window) {
+    try { const reg = await navigator.serviceWorker.ready; await reg.sync.register("report-sync"); } catch(_) {}
+  }
+  showSpinner(false);
+  showSuccessScreen(true);
+}
+
+function showSuccessScreen(offline) {
+  goTo(7);
+  if (offline) document.getElementById("success-offline-msg").style.display = "block";
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 2800);
+}
+function showSpinner(v) { document.getElementById("spinner").classList.toggle("show", v); }
+
+// ── Offline detection ──────────────────────────────────────────────────────
+function updateOfflineBanner() { document.body.classList.toggle("offline", !navigator.onLine); }
+window.addEventListener("online", updateOfflineBanner);
+window.addEventListener("offline", updateOfflineBanner);
+updateOfflineBanner();
+
+// ── Service Worker ─────────────────────────────────────────────────────────
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/static/fleet/service_worker.js")
+      .catch(e => console.warn("SW failed:", e));
+  });
+}
+</script>
 </body>
 </html>

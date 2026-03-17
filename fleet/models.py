@@ -1,34 +1,23 @@
 from django.db import models
-from django.conf import settings
+from django.core.files.storage import default_storage
 import uuid
 
-# Get storage class from settings and instantiate it lazily
-def _get_storage():
-    """Get storage backend from settings - ensures it's loaded after settings are configured."""
-    storage_class_path = getattr(settings, 'DEFAULT_FILE_STORAGE', 'django.core.files.storage.FileSystemStorage')
-    
-    # Import the storage class
-    if '.' in storage_class_path:
-        module_path, class_name = storage_class_path.rsplit('.', 1)
-        module = __import__(module_path, fromlist=[class_name])
-        storage_class = getattr(module, class_name)
-    else:
-        from django.core.files.storage import FileSystemStorage
-        storage_class = FileSystemStorage
-    
-    # Instantiate it
-    return storage_class()
 
-# Create a lazy storage instance that will be evaluated when first accessed
-from django.utils.functional import SimpleLazyObject
-storage = SimpleLazyObject(_get_storage)
+class Operator(models.Model):
+    """Pre-registered machine operators. Selected from dropdown on the usage form."""
+    name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
 
 
 class JobSite(models.Model):
-    """
-    Construction job site / project.
-    Used as a dropdown in UsageReport.
-    """
+    """Construction job site / project."""
 
     name = models.CharField(max_length=100, help_text="Project / Job site name")
     code = models.CharField(
@@ -54,9 +43,7 @@ class JobSite(models.Model):
 
 
 class Machine(models.Model):
-    """
-    Physical machine (excavator, loader, etc.).
-    """
+    """Physical machine (excavator, loader, etc.)."""
 
     STATUS_AVAILABLE = "AVAILABLE"
     STATUS_IN_USE = "IN_USE"
@@ -73,19 +60,12 @@ class Machine(models.Model):
     ]
 
     code = models.CharField(
-        max_length=50,
-        unique=True,
-        help_text="Internal ID, e.g. EXC-001",
+        max_length=50, unique=True, help_text="Internal ID, e.g. EXC-001"
     )
     name = models.CharField(
-        max_length=100,
-        help_text="Human-readable name, e.g. Excavadora CAT 320D",
+        max_length=100, help_text="Human-readable name, e.g. Excavadora CAT 320D"
     )
-    type = models.CharField(
-        max_length=50,
-        blank=True,
-        help_text="Excavator, Loader, etc.",
-    )
+    type = models.CharField(max_length=50, blank=True, help_text="Excavator, Loader, etc.")
     brand = models.CharField(max_length=50, blank=True)
     model = models.CharField(max_length=50, blank=True)
     serial_number = models.CharField(max_length=100, blank=True)
@@ -99,13 +79,16 @@ class Machine(models.Model):
     )
 
     status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default=STATUS_AVAILABLE,
+        max_length=20, choices=STATUS_CHOICES, default=STATUS_AVAILABLE
+    )
+
+    # Email recipients for report notifications (comma-separated)
+    notification_emails = models.TextField(
+        blank=True,
+        help_text="Comma-separated email addresses to notify when a report is submitted, e.g. manager@macnova.com,supervisor@macnova.com",
     )
 
     is_active = models.BooleanField(default=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -115,46 +98,43 @@ class Machine(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
+    def get_notification_emails(self):
+        """Return list of notification email addresses."""
+        return [e.strip() for e in self.notification_emails.split(",") if e.strip()]
+
 
 class UsageReport(models.Model):
-    """
-    One usage session of a machine (like a rental session).
-    """
+    """One usage session of a machine."""
 
+    # PROTECT prevents accidental deletion of machines that have reports
     machine = models.ForeignKey(
         Machine,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="usage_reports",
     )
     operator_name = models.CharField(
-        max_length=100,
-        help_text="Name of the operator for this session",
+        max_length=100, help_text="Name of the operator for this session"
     )
 
     date = models.DateTimeField(
-        help_text="When the operator used the machine",
+        db_index=True, help_text="When the operator used the machine"
     )
 
-    # Engine hours (current reading at time of report)
+    # Engine hours — current meter reading at time of report
     engine_hours = models.DecimalField(
         max_digits=8,
         decimal_places=2,
-        help_text="Current hour meter reading at time of report",
+        help_text="Current hour meter reading at time of report (end reading)",
     )
 
     # Fuel level (0-100%)
     fuel_level_start = models.PositiveSmallIntegerField(
-        null=True,
-        blank=True,
-        help_text="Fuel level (%) at start",
+        null=True, blank=True, help_text="Fuel level (%) at start"
     )
     fuel_level_end = models.PositiveSmallIntegerField(
-        null=True,
-        blank=True,
-        help_text="Fuel level (%) at end",
+        null=True, blank=True, help_text="Fuel level (%) at end"
     )
 
-    # Job site / project (dropdown)
     job_site = models.ForeignKey(
         JobSite,
         on_delete=models.SET_NULL,
@@ -166,41 +146,23 @@ class UsageReport(models.Model):
 
     # GPS location where report was submitted
     latitude = models.DecimalField(
-        max_digits=9,
-        decimal_places=6,
-        null=True,
-        blank=True,
-        help_text="Latitude of the machine when report was created",
+        max_digits=9, decimal_places=6, null=True, blank=True
     )
     longitude = models.DecimalField(
-        max_digits=9,
-        decimal_places=6,
-        null=True,
-        blank=True,
-        help_text="Longitude of the machine when report was created",
+        max_digits=9, decimal_places=6, null=True, blank=True
     )
 
     notes = models.TextField(blank=True)
 
-    # Signatures
+    # Signatures stored as PNG images
     operator_signature = models.ImageField(
-        upload_to="signatures/",
-        storage=storage,
-        null=True,
-        blank=True,
-        help_text="Operator signature",
+        upload_to="signatures/", null=True, blank=True
     )
     administrator_name = models.CharField(
-        max_length=100,
-        blank=True,
-        help_text="Name of the administrator receiving the machine",
+        max_length=100, blank=True, help_text="Name of the administrator receiving the machine"
     )
     administrator_signature = models.ImageField(
-        upload_to="signatures/",
-        storage=storage,
-        null=True,
-        blank=True,
-        help_text="Administrator signature",
+        upload_to="signatures/", null=True, blank=True
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -218,7 +180,6 @@ class UsageReport(models.Model):
         Returns None if no previous report exists.
         """
         try:
-            # Get the previous report for this machine (ordered by date, then created_at)
             previous_report = (
                 UsageReport.objects
                 .filter(machine=self.machine)
@@ -226,10 +187,9 @@ class UsageReport(models.Model):
                     models.Q(date__lt=self.date) |
                     (models.Q(date=self.date) & models.Q(created_at__lt=self.created_at))
                 )
-                .order_by('-date', '-created_at')
+                .order_by("-date", "-created_at")
                 .first()
             )
-            
             if previous_report and previous_report.engine_hours:
                 return float(self.engine_hours) - float(previous_report.engine_hours)
             return None
@@ -238,43 +198,39 @@ class UsageReport(models.Model):
 
 
 class UsagePhoto(models.Model):
-    """
-    Photos attached to a UsageReport (front, back, sides, etc.).
-    """
+    """Photos attached to a UsageReport."""
 
+    PLACA = "PLACA"
     FRONT = "FRONT"
     BACK = "BACK"
     LEFT = "LEFT"
     RIGHT = "RIGHT"
     WHEELS = "WHEELS"
     COCKPIT = "COCKPIT"
+    ENGINE = "ENGINE"
+    METER = "METER"
     OTHER = "OTHER"
 
     PHOTO_TYPE_CHOICES = [
-        (FRONT, "Front"),
-        (BACK, "Back"),
-        (LEFT, "Left side"),
-        (RIGHT, "Right side"),
-        (WHEELS, "Wheels / Tracks"),
-        (COCKPIT, "Cockpit / Controls"),
-        (OTHER, "Other"),
+        (PLACA, "Placa / Identificación"),
+        (FRONT, "Frente"),
+        (BACK, "Atrás"),
+        (LEFT, "Lado izquierdo"),
+        (RIGHT, "Lado derecho"),
+        (WHEELS, "Orugas / Neumáticos"),
+        (COCKPIT, "Cabina"),
+        (ENGINE, "Motor"),
+        (METER, "Horómetro"),
+        (OTHER, "Otra"),
     ]
 
     usage_report = models.ForeignKey(
-        UsageReport,
-        on_delete=models.CASCADE,
-        related_name="photos",
+        UsageReport, on_delete=models.CASCADE, related_name="photos"
     )
     photo_type = models.CharField(
-        max_length=20,
-        choices=PHOTO_TYPE_CHOICES,
-        default=OTHER,
+        max_length=20, choices=PHOTO_TYPE_CHOICES, default=OTHER
     )
-    image = models.ImageField(
-        upload_to="usage_photos/",
-        storage=storage  # Use lazy storage object
-    )
-
+    image = models.ImageField(upload_to="usage_photos/")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -282,31 +238,36 @@ class UsagePhoto(models.Model):
 
 
 class ChecklistItem(models.Model):
-    """
-    Defines an inspection checklist question, reused across reports.
-    Example: 'Check tires', 'Check for visible leaks', etc.
-    """
+    """Defines an inspection checklist question, reused across reports."""
 
-    label = models.CharField(
-        max_length=100,
-        help_text="Short label, e.g. 'Check tires'",
-    )
-    description = models.TextField(
-        blank=True,
-        help_text="Optional longer description / instructions",
+    QUESTION_YES_NO = "YES_NO"
+    QUESTION_CONDITION = "CONDITION"
+    QUESTION_FUEL = "FUEL"
+    QUESTION_EXTINTOR = "EXTINTOR"
+
+    QUESTION_TYPE_CHOICES = [
+        (QUESTION_YES_NO, "Sí / No"),
+        (QUESTION_CONDITION, "Buen estado / Mal estado"),
+        (QUESTION_FUEL, "Nivel de combustible (Bajo / Medio / Lleno)"),
+        (QUESTION_EXTINTOR, "Extintor (Hay / No hay)"),
+    ]
+
+    label = models.CharField(max_length=100, help_text="Short label, e.g. 'Fuga de aceite'")
+    description = models.TextField(blank=True, help_text="Optional longer description")
+    question_type = models.CharField(
+        max_length=20,
+        choices=QUESTION_TYPE_CHOICES,
+        default=QUESTION_YES_NO,
+        help_text="Determines which answer options are shown to the operator",
     )
     # Optional: restrict to a machine type. If blank, applies to all.
     machine_type = models.CharField(
         max_length=50,
         blank=True,
-        help_text="Optional machine type filter, e.g. 'Excavator'. Leave blank for all.",
+        help_text="Optional machine type filter. Leave blank for all.",
     )
-
     is_active = models.BooleanField(default=True)
-    display_order = models.PositiveIntegerField(
-        default=0,
-        help_text="Ordering in the checklist",
-    )
+    display_order = models.PositiveIntegerField(default=0, help_text="Order in the checklist")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -319,40 +280,36 @@ class ChecklistItem(models.Model):
 
 
 class ChecklistEntry(models.Model):
-    """
-    Stores the answer to one ChecklistItem for a specific UsageReport.
-    """
-
-    VALUE_ISSUE = "ISSUE"
-    VALUE_NO_ISSUE = "NO_ISSUE"
-    VALUE_NA = "NA"
+    """Stores the answer to one ChecklistItem for a specific UsageReport."""
 
     VALUE_CHOICES = [
-        (VALUE_ISSUE, "There is an issue"),
-        (VALUE_NO_ISSUE, "No issue"),
-        (VALUE_NA, "N/A"),
+        # Yes/No questions
+        ("SI", "Sí"),
+        ("NO", "No"),
+        # Condition questions
+        ("BUEN_ESTADO", "Buen estado"),
+        ("MAL_ESTADO", "Mal estado"),
+        # Fuel level
+        ("BAJO", "Bajo"),
+        ("MEDIO", "Medio"),
+        ("LLENO", "Lleno"),
+        # Extintor
+        ("HAY", "Hay"),
+        ("NO_HAY", "No hay"),
+        # Legacy values (kept for existing data)
+        ("ISSUE", "Hay un problema"),
+        ("NO_ISSUE", "Sin problema"),
+        ("NA", "N/A"),
     ]
 
     usage_report = models.ForeignKey(
-        UsageReport,
-        on_delete=models.CASCADE,
-        related_name="checklist_entries",
+        UsageReport, on_delete=models.CASCADE, related_name="checklist_entries"
     )
     item = models.ForeignKey(
-        ChecklistItem,
-        on_delete=models.CASCADE,
-        related_name="entries",
+        ChecklistItem, on_delete=models.CASCADE, related_name="entries"
     )
-    value = models.CharField(
-        max_length=10,
-        choices=VALUE_CHOICES,
-        default=VALUE_NO_ISSUE,
-    )
-    comment = models.TextField(
-        blank=True,
-        help_text="Optional notes if there is an issue",
-    )
-
+    value = models.CharField(max_length=20, choices=VALUE_CHOICES)
+    comment = models.TextField(blank=True, help_text="Optional notes if there is an issue")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
