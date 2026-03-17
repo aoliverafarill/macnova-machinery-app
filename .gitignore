@@ -44,9 +44,10 @@ db.sqlite3-journal
 # Media files (local uploads - not committed)
 media/
 
-# Static files (collected)
+# Static files (collected by collectstatic — not source files)
 staticfiles/
-static/
+# Allow app-level source static files (PWA assets, JS, etc.)
+!fleet/static/
 
 # IDE
 .vscode/

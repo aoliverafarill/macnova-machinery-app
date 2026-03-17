@@ -108,6 +108,16 @@
 
   </div>
 
+  <!-- Actions -->
+  <div style="padding: 20px 32px; text-align: center; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+    <a href="{{ pdf_url }}" style="display:inline-block;background:#2d5fa6;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:.04em;margin-right:8px;">
+      ⬇ Descargar PDF
+    </a>
+    <a href="{{ report_url }}" style="display:inline-block;background:#e2e8f0;color:#1e293b;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:.04em;">
+      Ver Reporte
+    </a>
+  </div>
+
   <div class="footer">
     Reporte #{{ report.id }} · Generado automáticamente por Macnova Fleet · {{ report.created_at|date:"d/m/Y H:i" }}
   </div>

@@ -107,7 +107,7 @@
       {{ machine.type|upper|default:"MAQUINARIA" }}
       <strong>{{ machine.code }} — {{ machine.name }}</strong>
     </div>
-    <button class="btn btn-primary" style="max-width:280px;margin-top:16px;" onclick="goTo(1)">
+    <button class="btn btn-primary" style="max-width:260px;width:100%;margin-top:24px;padding:18px 24px;font-size:17px;" onclick="goTo(1)">
       INICIAR REPORTE
     </button>
   </div>
@@ -381,6 +381,7 @@
 const MACHINE_QR = "{{ machine.qr_slug }}";
 const SUBMIT_URL = "/m/" + MACHINE_QR + "/submit/";
 const CSRF_TOKEN = "{{ csrf_token }}";
+const LAST_ENGINE_HOURS = {% if last_engine_hours %}{{ last_engine_hours }}{% else %}null{% endif %};
 
 const PHOTO_TYPE_MAP = {
   placa:"PLACA", front:"FRONT", back:"BACK", left:"LEFT", right:"RIGHT",
@@ -424,9 +425,15 @@ function nextFrom1() {
 }
 
 function nextFrom2() {
-  const h = document.getElementById("engine_hours").value.trim();
-  if (!h) { toast("Ingrese el horómetro final"); return; }
-  state.engine_hours = h;
+  const raw = document.getElementById("engine_hours").value.trim();
+  if (!raw) { toast("Ingrese el horómetro final"); return; }
+  const h = parseFloat(raw);
+  if (isNaN(h) || h <= 0) { toast("Ingrese un valor válido de horómetro"); return; }
+  if (LAST_ENGINE_HOURS !== null && h < LAST_ENGINE_HOURS) {
+    toast("El horómetro final (" + h + ") no puede ser menor al inicial (" + LAST_ENGINE_HOURS + ")");
+    return;
+  }
+  state.engine_hours = String(h);
   goTo(3);
 }
 
@@ -447,20 +454,45 @@ function selectToggle(btn, itemId, val) {
 // ── Photos ─────────────────────────────────────────────────────────────────
 function triggerPhoto(key) { document.getElementById("input-" + key).click(); }
 
-function handlePhoto(key, input) {
+// Compress photo client-side before storing (reduces 4-8MB phone photos to ~200-400KB)
+function compressPhoto(file, maxPx, quality) {
+  maxPx = maxPx || 1200;
+  quality = quality || 0.72;
+  return new Promise(function(resolve) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        var w = Math.round(img.width * scale);
+        var h = Math.round(img.height * scale);
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handlePhoto(key, input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const dataUrl = e.target.result;
+  try {
+    const dataUrl = await compressPhoto(file);
     state.photos[key] = { dataUrl, type: PHOTO_TYPE_MAP[key] || "OTHER" };
     const slot = document.getElementById("slot-" + key);
     slot.innerHTML = `<img src="${dataUrl}" alt=""><div class="photo-check">✓</div>`;
     slot.classList.add("has-photo");
     const label = document.getElementById("photo-count-label");
     if (label) label.textContent = Object.keys(state.photos).length + " / 10 fotos tomadas";
-  };
-  reader.readAsDataURL(file);
+  } catch(e) {
+    console.error("Photo compression failed:", e);
+    toast("Error al procesar la foto, intente de nuevo");
+  }
   input.value = "";
 }
 

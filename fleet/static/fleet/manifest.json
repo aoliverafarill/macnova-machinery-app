@@ -1,0 +1,19 @@
+{
+  "name": "Macnova Reportes",
+  "short_name": "Macnova",
+  "description": "Reporte diario de maquinaria — Macnova",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/",
+  "scope": "/",
+  "theme_color": "#2d5fa6",
+  "background_color": "#dce8f5",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232d5fa6'/><text y='.9em' font-size='80' x='10'>🏗️</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

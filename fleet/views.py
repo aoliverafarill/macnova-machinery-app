@@ -127,7 +127,14 @@ def send_report_notification(usage_report):
         return
 
     try:
-        html = render_to_string("fleet/email_report.html", {"report": usage_report})
+        site_url = getattr(settings, "SITE_URL", "https://macnova-machinery-app.onrender.com").rstrip("/")
+        report_url = f"{site_url}/dashboard/report/{usage_report.id}/"
+        pdf_url = f"{site_url}/dashboard/report/{usage_report.id}/pdf/"
+        html = render_to_string("fleet/email_report.html", {
+            "report": usage_report,
+            "report_url": report_url,
+            "pdf_url": pdf_url,
+        })
         send_mail(
             subject=f"Reporte: {usage_report.machine.code} — {usage_report.date:%Y-%m-%d}",
             message=f"Reporte de {usage_report.machine.name} por {usage_report.operator_name}.",
